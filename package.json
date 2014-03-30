@@ -1,0 +1,26 @@
+{
+  "name": "gulp-purescript",
+  "description": "Run the PureScript compiler",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": "ethul/gulp-purescript",
+  "author": {
+    "name": "Eric",
+    "email": "thul.eric@gmail.com"
+  },
+  "engineStrict": true,
+  "engines": {"node": ">=0.10"},
+  "files": ["index.js"],
+  "scripts": {"test": "mocha"},
+  "keywords": [
+    "gulpplugin",
+    "purescript"
+  ],
+  "dependencies": {
+    "through2": "^0.4.1",
+    "gulp-util": "^2.2.14"
+  },
+  "devDependencies": {
+    "mocha": "*"
+  }
+}
