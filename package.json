@@ -3,7 +3,7 @@
   "description": "Run the PureScript compiler",
   "version": "0.0.1",
   "license": "MIT",
-  "repository": "ethul/gulp-purescript",
+  "repository": "purescript/gulp-purescript",
   "author": {
     "name": "Eric",
     "email": "thul.eric@gmail.com"
