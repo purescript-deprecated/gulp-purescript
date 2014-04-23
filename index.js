@@ -27,7 +27,7 @@ var gutil = require('gulp-util')
           runtimeTypeChecks: '--runtime-type-checks',
           verboseErrors: '--verbose-errors'
         }
-        , single: {browserNamespace: '--browser-namespace'}
+        , single: {browserNamespace: '--browser-namespace', output: '--output'}
         , multi: {}
       }
     }
