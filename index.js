@@ -27,7 +27,7 @@ var gutil = require('gulp-util')
           runtimeTypeChecks: '--runtime-type-checks',
           verboseErrors: '--verbose-errors'
         }
-        , single: {browserNamespace: '--browser-namespace'}
+        , single: {browserNamespace: '--browser-namespace', output: '--output'}
         , multi: {}
       }
     }
@@ -36,9 +36,9 @@ var gutil = require('gulp-util')
 function options(o, opts) {
   return Object.keys(opts || {}).reduce(function(b, a){
     if (a in o.flags && opts[a] === true) return b.concat([o.flags[a]]);
-    else if (a in o.single && typeof opts[a] === "string") return b.concat([o.single[a] + '=' + opts[a]]);
+    else if (a in o.single && typeof opts[a] === 'string') return b.concat([o.single[a] + '=' + opts[a]]);
     else if (a in o.multi) {
-      if (typeof opts[a] === "string") return b.concat([o.multi[a] + '=' + opts[a]]);
+      if (typeof opts[a] === 'string') return b.concat([o.multi[a] + '=' + opts[a]]);
       else {
         return b.concat(opts[a].map(function(x){
           return o.multi[a] + '=' + x;
