@@ -60,3 +60,4 @@ Invokes the `psc-make` command.
  - runtimeTypeChecks: Boolean value that toggles `--runtime-type-checks`
  - verboseErrors: Boolean value that toggles `--verbose-errors`
  - browserNamespace: String value that sets `--browser-namespace=<string>`
+ - output: String value that sets `--output=<string>`
