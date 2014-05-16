@@ -2,6 +2,7 @@
 
 var gutil = require('gulp-util')
   , through = require('through2')
+  , lodash = require('lodash')
   , cp = require('child_process')
   , PLUGIN = 'gulp-purescript'
   , OPTIONS = {
@@ -66,8 +67,14 @@ function acc(f) {
 }
 
 function psc(opts) {
+  var output = opts && opts.output ? opts.output : 'psc.js'
+    , opts$prime = lodash.omit(opts || {}, 'output')
+  ;
+  // The `output` given there will be passed to gulp, not `psc` command.
+  // If it was passed to `psc` command, the file will be created and gulp
+  // won't receive any input stream from this function.
   return acc(function(files, cb){
-    var args = files.concat(options(OPTIONS.psc, opts))
+    var args = files.concat(options(OPTIONS.psc, opts$prime))
       , cmd = cp.spawn('psc', args)
       , buffer = new Buffer(0)
       , that = this
@@ -80,7 +87,7 @@ function psc(opts) {
       if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
       else {
         that.push(new gutil.File({
-          path: (opts.output || 'psc.js'),
+          path: output,
           contents: buffer
         }));
       }
