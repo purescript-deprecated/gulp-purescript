@@ -66,6 +66,14 @@ function acc(f) {
 }
 
 function psc(opts) {
+  var output = undefined;
+  if (opts.output) {
+    output = opts.output;
+    // The `output` given there will be passed to gulp, not `psc` command.
+    // If it was passed to `psc` command, the file will be created and gulp
+    // won't receive any input stream from this function.
+    delete opts.output;
+  }
   return acc(function(files, cb){
     var args = files.concat(options(OPTIONS.psc, opts))
       , cmd = cp.spawn('psc', args)
@@ -80,7 +88,7 @@ function psc(opts) {
       if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
       else {
         that.push(new gutil.File({
-          path: (opts.output || 'psc.js'),
+          path: (output || 'psc.js'),
           contents: buffer
         }));
       }
