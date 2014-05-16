@@ -15,7 +15,7 @@ var gutil = require('gulp-util')
           main: '--main',
           verboseErrors: '--verbose-errors'
         }
-        , single: {browserNamespace: '--browser-namespace', externs: '--externs', main: '--main'}
+        , single: {browserNamespace: '--browser-namespace', externs: '--externs', main: '--main', output: '--output'}
         , multi: {modules: '--module', codegen: '--codegen'}
       },
       pscMake: {
@@ -80,7 +80,7 @@ function psc(opts) {
       if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
       else {
         that.push(new gutil.File({
-          path: 'psc.js',
+          path: (opts.output || 'psc.js'),
           contents: buffer
         }));
       }
