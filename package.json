@@ -1,7 +1,7 @@
 {
   "name": "gulp-purescript",
   "description": "Run the PureScript compiler",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
   "repository": "purescript/gulp-purescript",
   "author": {
