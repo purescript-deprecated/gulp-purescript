@@ -46,7 +46,7 @@ Invokes the `psc` command.
  - externs: String value that sets `--externs=<string>`
  - modules: String or array value that sets one or more `--module=<string>`
  - codegen: String or array value that sets one or more `--codegen=<string>`
- - output: String value that sets `--output=<string>`
+ - output: String value that specifies the output file(this won't set'`--output=<string>`)
 
 ### purescript.pscMake(options)
 
