@@ -9,16 +9,23 @@
     "email": "thul.eric@gmail.com"
   },
   "engineStrict": true,
-  "engines": {"node": ">=0.10"},
-  "files": ["index.js"],
-  "scripts": {"test": "mocha"},
+  "engines": {
+    "node": ">=0.10"
+  },
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
   "keywords": [
     "gulpplugin",
     "purescript"
   ],
   "dependencies": {
-    "through2": "^0.4.1",
-    "gulp-util": "^2.2.14"
+    "gulp-util": "^2.2.14",
+    "lodash": "^2.4.1",
+    "through2": "^0.4.1"
   },
   "devDependencies": {
     "mocha": "*"

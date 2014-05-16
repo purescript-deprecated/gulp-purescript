@@ -13,6 +13,7 @@ it('should compile purescript', function(cb){
 
   stream.on('data', function(file){
     assert(/Fixture/.test(file.contents.toString()));
+    assert.equal('psc.js', file.path);
     cb();
   });
 
