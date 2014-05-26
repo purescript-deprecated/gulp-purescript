@@ -62,3 +62,11 @@ Invokes the `psc-make` command.
  - verboseErrors: Boolean value that toggles `--verbose-errors`
  - browserNamespace: String value that sets `--browser-namespace=<string>`
  - output: String value that sets `--output=<string>`
+
+### purescript.docgen(options)
+
+Invokes the `docgen` command.
+
+#### options
+
+ - hierarchy: Boolean value that toggles `--hierarchy-images`
