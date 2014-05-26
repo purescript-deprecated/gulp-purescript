@@ -30,6 +30,13 @@ var gutil = require('gulp-util')
         }
         , single: {browserNamespace: '--browser-namespace', output: '--output'}
         , multi: {}
+      },
+      docgen: {
+        flags: {
+          hierarchy: '--hierarchy-images'
+        }
+        , single: {}
+        , multi: {}
       }
     }
 ;
@@ -115,7 +122,34 @@ function pscMake(opts) {
   });
 }
 
+function docgen(opts) {
+  return acc(function(files, cb){
+    var args = options(OPTIONS.docgen, opts).concat(files)
+      , cmd = cp.spawn('docgen', args)
+      , buffer = new Buffer(0)
+      , that = this
+    ;
+    cmd.stdout.on('data', function(stdout){
+      buffer = Buffer.concat([buffer, new Buffer(stdout)]);
+    });
+    cmd.stderr.on('data', function(stderr){
+      gutil.log('Stderr from \'' + gutil.colors.cyan('docgen') + '\'\n' + gutil.colors.magenta(stderr));
+    });
+    cmd.on('close', function(code){
+      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
+      else {
+        that.push(new gutil.File({
+          path: '.',
+          contents: buffer
+        }));
+      }
+      cb();
+    });
+  });
+}
+
 module.exports = {
+  docgen: docgen,
   psc: psc,
   pscMake: pscMake
 }
