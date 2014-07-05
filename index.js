@@ -91,7 +91,7 @@ function psc(opts) {
       gutil.log('Stderr from \'' + gutil.colors.cyan('psc') + '\'\n' + gutil.colors.magenta(stderr));
     });
     cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
+      if (!!code) fail(that, 'psc', buffer);
       else {
         that.push(new gutil.File({
           path: output,
@@ -116,7 +116,7 @@ function pscMake(opts) {
       gutil.log('Stderr from \'' + gutil.colors.cyan('psc-make') + '\'\n' + gutil.colors.magenta(stderr));
     });
     cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, 'psc-make has failed'));
+      if (!!code) fail(that, 'psc-make', buffer);
       cb();
     });
   });
@@ -136,7 +136,7 @@ function docgen(opts) {
       gutil.log('Stderr from \'' + gutil.colors.cyan('docgen') + '\'\n' + gutil.colors.magenta(stderr));
     });
     cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
+      if (!!code) fail(that, 'docgen', buffer);
       else {
         that.push(new gutil.File({
           path: '.',
@@ -146,6 +146,11 @@ function docgen(opts) {
       cb();
     });
   });
+}
+
+function fail(plugin, tool, buffer) {
+  var msg = buffer.toString();
+  plugin.emit('error', new gutil.PluginError(PLUGIN, tool + ' has failed' + (msg ? ': ' + msg : '')));
 }
 
 module.exports = {
