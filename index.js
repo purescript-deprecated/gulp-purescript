@@ -91,7 +91,7 @@ function psc(opts) {
       gutil.log('Stderr from \'' + gutil.colors.cyan('psc') + '\'\n' + gutil.colors.magenta(stderr));
     });
     cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
+      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, "psc has failed"));
       else {
         that.push(new gutil.File({
           path: output,
@@ -136,7 +136,7 @@ function docgen(opts) {
       gutil.log('Stderr from \'' + gutil.colors.cyan('docgen') + '\'\n' + gutil.colors.magenta(stderr));
     });
     cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
+      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, "docgen failed"));
       else {
         that.push(new gutil.File({
           path: '.',
