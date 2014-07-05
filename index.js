@@ -83,19 +83,18 @@ function psc(opts) {
   return acc(function(files, cb){
     var args = files.concat(options(OPTIONS.psc, opts$prime))
       , cmd = cp.spawn('psc', args)
-      , buffer = new Buffer(0)
+      , buffero = new Buffer(0)
+      , buffere = new Buffer(0)
       , that = this
     ;
-    cmd.stdout.on('data', function(stdout){buffer = Buffer.concat([buffer, new Buffer(stdout)]);});
-    cmd.stderr.on('data', function(stderr){
-      gutil.log('Stderr from \'' + gutil.colors.cyan('psc') + '\'\n' + gutil.colors.magenta(stderr));
-    });
+    cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+    cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
     cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
+      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
       else {
         that.push(new gutil.File({
           path: output,
-          contents: buffer
+          contents: buffero
         }));
       }
       cb();
@@ -126,21 +125,18 @@ function docgen(opts) {
   return acc(function(files, cb){
     var args = options(OPTIONS.docgen, opts).concat(files)
       , cmd = cp.spawn('docgen', args)
-      , buffer = new Buffer(0)
+      , buffero = new Buffer(0)
+      , buffere = new Buffer(0)
       , that = this
     ;
-    cmd.stdout.on('data', function(stdout){
-      buffer = Buffer.concat([buffer, new Buffer(stdout)]);
-    });
-    cmd.stderr.on('data', function(stderr){
-      gutil.log('Stderr from \'' + gutil.colors.cyan('docgen') + '\'\n' + gutil.colors.magenta(stderr));
-    });
+    cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+    cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
     cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffer.toString()));
+      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
       else {
         that.push(new gutil.File({
           path: '.',
-          contents: buffer
+          contents: buffero
         }));
       }
       cb();
