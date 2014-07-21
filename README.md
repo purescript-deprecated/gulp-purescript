@@ -27,7 +27,7 @@ gulp.task('purescript', function(){
 
 ## API
 
-Refer to the PureScript [usage](http://docs.purescript.org/en/latest/intro.html#usage) section for additional details on the behaviour of each option below.
+Refer to the PureScript [usage](http://docs.purescript.org/en/latest/start.html#compiler-usage) section for additional details on the behaviour of each option below.
 
 ### purescript.psc(options)
 
