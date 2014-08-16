@@ -4,7 +4,12 @@ var gutil = require('gulp-util')
   , through = require('through2')
   , lodash = require('lodash')
   , cp = require('child_process')
+  , fs = require('fs')
+  , path = require('path')
   , PLUGIN = 'gulp-purescript'
+  , DOTPSCI = '.psci'
+  , LOADM = ':m'
+  , CWD = process.cwd()
   , OPTIONS = {
       psc: {
         flags: {
@@ -121,6 +126,23 @@ function pscMake(opts) {
   });
 }
 
+function dotPsci(opts) {
+  var stream = through.obj(function(file, env, cb){
+    if (file.isNull()) {
+      this.push(file);
+      return cb();
+    }
+    if (file.isStream()) {
+      this.emit('error', new gutil.PluginError(PLUGIN, 'Streaming not supported'));
+      return cb();
+    }
+    this.push(new Buffer(LOADM + ' ' + path.relative(CWD, file.path) + '\n'));
+    cb();
+  });
+  stream.pipe(fs.createWriteStream(DOTPSCI));
+  return stream;
+}
+
 function docgen(opts) {
   return acc(function(files, cb){
     var args = options(OPTIONS.docgen, opts).concat(files)
@@ -146,6 +168,7 @@ function docgen(opts) {
 
 module.exports = {
   docgen: docgen,
+  dotPsci: dotPsci,
   psc: psc,
   pscMake: pscMake
 }

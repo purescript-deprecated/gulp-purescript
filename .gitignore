@@ -1,3 +1,4 @@
 .DS_Store
 *.log
+.psci
 node_modules

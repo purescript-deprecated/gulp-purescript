@@ -63,6 +63,11 @@ Invokes the `psc-make` command.
  - browserNamespace: String value that sets `--browser-namespace=<string>`
  - output: String value that sets `--output=<string>`
 
+### purescript.dotPsci()
+
+Generates a `.psci` file in the current directory. Each source file is
+added with the `:m` command.
+
 ### purescript.docgen(options)
 
 Invokes the `docgen` command.
