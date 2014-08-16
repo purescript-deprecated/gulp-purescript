@@ -84,3 +84,29 @@ it('should fail to compile with an error message', function(cb){
     }
   });
 });
+
+it('should write a .psci file', function(cb){
+  var stream = purescript.dotPsci()
+    , fixture = 'Fixture1.purs'
+    , output = ':m ' + fixture + '\n'
+  ;
+
+  stream.on('data', function(line){
+    assert.equal(output, line.toString());
+    cb();
+  });
+
+  fs.readFile(fixture, function(e, buffer){
+    if (e) cb(assert(false));
+    else {
+      stream.write(new gutil.File({
+        cwd: __dirname,
+        base: __dirname,
+        path: __dirname + '/' + fixture,
+        contents: buffer,
+        stat: {mtime: new Date()}
+      }));
+      stream.end();
+    }
+  });
+});
