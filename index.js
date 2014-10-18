@@ -17,7 +17,6 @@ var gutil = require('gulp-util')
           noOpts: '--no-opts',
           noMagicDo: '--no-magic-do',
           noTco: '--no-tco',
-          runtimeTypeChecks: '--runtime-type-checks',
           main: '--main',
           verboseErrors: '--verbose-errors'
         }
@@ -30,7 +29,6 @@ var gutil = require('gulp-util')
           noOpts: '--no-opts',
           noMagicDo: '--no-magic-do',
           noTco: '--no-tco',
-          runtimeTypeChecks: '--runtime-type-checks',
           verboseErrors: '--verbose-errors'
         }
         , single: {browserNamespace: '--browser-namespace', output: '--output'}
