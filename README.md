@@ -43,8 +43,6 @@ Invokes the `psc` command.
   - Turn off optimizations which inline calls to >>= for the Eff monad.
  - **noTco**: Boolean value that toggles `--no-tco`
   - Turn off tail-call elimination.
- - **runtimeTypeChecks**: Boolean value that toggles `--runtime-type-checks`
-  - Generate simple runtime type checks for function arguments with simple types.
  - **verboseErrors**: Boolean value that toggles `--verbose-errors`
   - Generate verbose error messages.
  - **main**: Boolean or string value that sets `--main` or `--main=<string>`
@@ -74,8 +72,6 @@ Invokes the `psc-make` command.
   - Turn off optimizations which inline calls to >>= for the Eff monad.
  - **noTco**: Boolean value that toggles `--no-tco`
   - Turn off tail-call elimination.
- - **runtimeTypeChecks**: Boolean value that toggles `--runtime-type-checks`
-  - Generate simple runtime type checks for function arguments with simple types.
  - **verboseErrors**: Boolean value that toggles `--verbose-errors`
   - Generate verbose error messages.
  - **browserNamespace**: String value that sets `--browser-namespace=<string>`
