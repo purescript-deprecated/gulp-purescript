@@ -79,15 +79,15 @@ Invokes the `psc-make` command.
  - **output**: String value that sets `--output=<string>`
   - Write the generated Javascript to the specified file.
 
-### purescript.dotPsci()
+### purescript.pscDocs(options)
 
-Generates a `.psci` file in the current directory. Each source file is
-added with the `:m` command.
-
-### purescript.docgen(options)
-
-Invokes the `docgen` command.
+Invokes the `pscDocs` command.
 
 #### options
 
  - hierarchy: Boolean value that toggles `--hierarchy-images`
+
+### purescript.dotPsci()
+
+Generates a `.psci` file in the current directory. Each source file is
+added with the `:m` command.
