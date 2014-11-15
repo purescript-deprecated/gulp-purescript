@@ -124,27 +124,10 @@ function pscMake(opts) {
   });
 }
 
-function dotPsci(opts) {
-  var stream = through.obj(function(file, env, cb){
-    if (file.isNull()) {
-      this.push(file);
-      return cb();
-    }
-    if (file.isStream()) {
-      this.emit('error', new gutil.PluginError(PLUGIN, 'Streaming not supported'));
-      return cb();
-    }
-    this.push(new Buffer(LOADM + ' ' + path.relative(CWD, file.path) + '\n'));
-    cb();
-  });
-  stream.pipe(fs.createWriteStream(DOTPSCI));
-  return stream;
-}
-
-function docgen(opts) {
+function pscDocs(opts) {
   return acc(function(files, cb){
     var args = options(OPTIONS.docgen, opts).concat(files)
-      , cmd = cp.spawn('docgen', args)
+      , cmd = cp.spawn('psc-docs', args)
       , buffero = new Buffer(0)
       , buffere = new Buffer(0)
       , that = this
@@ -164,9 +147,26 @@ function docgen(opts) {
   });
 }
 
+function dotPsci(opts) {
+  var stream = through.obj(function(file, env, cb){
+    if (file.isNull()) {
+      this.push(file);
+      return cb();
+    }
+    if (file.isStream()) {
+      this.emit('error', new gutil.PluginError(PLUGIN, 'Streaming not supported'));
+      return cb();
+    }
+    this.push(new Buffer(LOADM + ' ' + path.relative(CWD, file.path) + '\n'));
+    cb();
+  });
+  stream.pipe(fs.createWriteStream(DOTPSCI));
+  return stream;
+}
+
 module.exports = {
-  docgen: docgen,
-  dotPsci: dotPsci,
   psc: psc,
-  pscMake: pscMake
+  pscMake: pscMake,
+  pscDocs: pscDocs,
+  dotPsci: dotPsci
 }
