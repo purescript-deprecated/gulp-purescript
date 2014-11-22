@@ -25,7 +25,8 @@
   "dependencies": {
     "gulp-util": "^2.2.14",
     "lodash": "^2.4.1",
-    "through2": "^0.4.1"
+    "through2": "^0.4.1",
+    "which": "^1.0.5"
   },
   "devDependencies": {
     "mocha": "*"

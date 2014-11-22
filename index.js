@@ -6,12 +6,14 @@ var gutil = require('gulp-util')
   , cp = require('child_process')
   , fs = require('fs')
   , path = require('path')
+  , which = require('which')
   , PLUGIN = 'gulp-purescript'
   , DOTPSCI = '.psci'
   , LOADM = ':m'
   , CWD = process.cwd()
   , OPTIONS = {
       psc: {
+        cmd: 'psc',
         flags: {
           noPrelude: '--no-prelude',
           noOpts: '--no-opts',
@@ -24,6 +26,7 @@ var gutil = require('gulp-util')
         , multi: {modules: '--module', codegen: '--codegen'}
       },
       pscMake: {
+        cmd: 'psc-make',
         flags: {
           noPrelude: '--no-prelude',
           noOpts: '--no-opts',
@@ -34,7 +37,8 @@ var gutil = require('gulp-util')
         , single: {browserNamespace: '--browser-namespace', output: '--output'}
         , multi: {}
       },
-      docgen: {
+      pscDocs: {
+        cmd: 'psc-docs',
         flags: {
           hierarchy: '--hierarchy-images'
         }
@@ -43,6 +47,18 @@ var gutil = require('gulp-util')
       }
     }
 ;
+
+function run(cmd, args, k) {
+  var err = [ 'Failed to find ' + gutil.colors.magenta(cmd), 'in your path.'
+            , 'Please ensure that ' + gutil.colors.magenta(cmd)
+            , 'is available on your system.' ].join(' ')
+    , that = this
+  ;
+  which(cmd, function(e){
+    if (e) that.emit('error', new gutil.PluginError(PLUGIN, err));
+    else k(cp.spawn(cmd, args));
+  });
+}
 
 function options(o, opts) {
   return Object.keys(opts || {}).reduce(function(b, a){
@@ -85,65 +101,68 @@ function psc(opts) {
   // won't receive any input stream from this function.
   return acc(function(files, cb){
     var args = files.concat(options(OPTIONS.psc, opts$prime))
-      , cmd = cp.spawn('psc', args)
       , buffero = new Buffer(0)
       , buffere = new Buffer(0)
       , that = this
     ;
-    cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
-    cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
-    cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
-      else {
-        that.push(new gutil.File({
-          path: output,
-          contents: buffero
-        }));
-      }
-      cb();
-    });
+    run.apply(this, [OPTIONS.psc.cmd, args, function(cmd){
+      cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+      cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+      cmd.on('close', function(code){
+        if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
+        else {
+          that.push(new gutil.File({
+            path: output,
+            contents: buffero
+          }));
+        }
+        cb();
+      });
+    }]);
   });
 }
 
 function pscMake(opts) {
   return acc(function(files, cb){
     var args = options(OPTIONS.pscMake, opts).concat(files)
-      , cmd = cp.spawn('psc-make', args)
       , that = this
     ;
-    cmd.stdout.on('data', function(stdout){
-      gutil.log('Stdout from \'' + gutil.colors.cyan('psc-make') + '\'\n' + gutil.colors.magenta(stdout));
-    });
-    cmd.stderr.on('data', function(stderr){
-      gutil.log('Stderr from \'' + gutil.colors.cyan('psc-make') + '\'\n' + gutil.colors.magenta(stderr));
-    });
-    cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, 'psc-make has failed'));
-      cb();
-    });
+    run.apply(this, [OPTIONS.pscMake.cmd, args, function(cmd){
+      cmd.stdout.on('data', function(stdout){
+        gutil.log('Stdout from \'' + gutil.colors.cyan(OPTIONS.pscMake.cmd) + '\'\n' + gutil.colors.magenta(stdout));
+      });
+      cmd.stderr.on('data', function(stderr){
+        gutil.log('Stderr from \'' + gutil.colors.cyan(OPTIONS.pscMake.cmd) + '\'\n' + gutil.colors.magenta(stderr));
+      });
+      cmd.on('close', function(code){
+        if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, OPTIONS.pscMake.cmd + ' has failed'));
+        cb();
+      });
+    }]);
   });
 }
 
 function pscDocs(opts) {
   return acc(function(files, cb){
-    var args = options(OPTIONS.docgen, opts).concat(files)
-      , cmd = cp.spawn('psc-docs', args)
+    var args = options(OPTIONS.pscDocs, opts).concat(files)
       , buffero = new Buffer(0)
       , buffere = new Buffer(0)
       , that = this
     ;
-    cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
-    cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
-    cmd.on('close', function(code){
-      if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
-      else {
-        that.push(new gutil.File({
-          path: '.',
-          contents: buffero
-        }));
-      }
-      cb();
-    });
+    run.apply(this, [OPTIONS.pscDocs.cmd, args, function(cmd){
+      cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+      cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+      cmd.on('close', function(code){
+        if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
+        else {
+          that.push(new gutil.File({
+            path: '.',
+            contents: buffero
+          }));
+        }
+        cb();
+      });
+    }]);
   });
 }
 
