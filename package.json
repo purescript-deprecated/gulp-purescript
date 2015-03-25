@@ -8,27 +8,33 @@
     "name": "Eric",
     "email": "thul.eric@gmail.com"
   },
-  "engineStrict": true,
   "engines": {
-    "node": ">=0.10"
+    "node": ">=0.10.0"
   },
   "files": [
-    "index.js"
+    "index.js",
+    "options.js"
   ],
   "scripts": {
-    "test": "mocha"
+    "test": "node test.js | tap-spec"
   },
   "keywords": [
     "gulpplugin",
     "purescript"
   ],
   "dependencies": {
-    "gulp-util": "^2.2.14",
-    "lodash": "^2.4.1",
-    "through2": "^0.4.1",
-    "which": "^1.0.5"
+    "gulp-util": "^3.0.4",
+    "lodash": "^3.5.0",
+    "logalot": "^2.1.0",
+    "minimist": "^1.1.1",
+    "multipipe": "^0.1.2",
+    "through2": "^0.6.3",
+    "which": "^1.0.9"
   },
   "devDependencies": {
-    "mocha": "*"
+    "gulp": "^3.8.11",
+    "rewire": "^2.3.1",
+    "tap-spec": "^2.2.2",
+    "tape": "^3.5.0"
   }
 }

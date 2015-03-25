@@ -1,66 +1,57 @@
 'use strict';
 
-var gutil = require('gulp-util')
-  , through = require('through2')
-  , lodash = require('lodash')
-  , cp = require('child_process')
-  , fs = require('fs')
-  , path = require('path')
-  , which = require('which')
-  , PLUGIN = 'gulp-purescript'
-  , DOTPSCI = '.psci'
-  , LOADM = ':m'
-  , CWD = process.cwd()
-  , OPTIONS = {
-      psc: {
-        cmd: 'psc',
-        flags: {
-          noPrelude: '--no-prelude',
-          noOpts: '--no-opts',
-          noMagicDo: '--no-magic-do',
-          noTco: '--no-tco',
-          main: '--main',
-          verboseErrors: '--verbose-errors'
-        }
-        , single: {browserNamespace: '--browser-namespace', externs: '--externs', main: '--main', output: '--output'}
-        , multi: {modules: '--module', codegen: '--codegen'}
-      },
-      pscMake: {
-        cmd: 'psc-make',
-        flags: {
-          noPrelude: '--no-prelude',
-          noOpts: '--no-opts',
-          noMagicDo: '--no-magic-do',
-          noTco: '--no-tco',
-          verboseErrors: '--verbose-errors'
-        }
-        , single: {browserNamespace: '--browser-namespace', output: '--output'}
-        , multi: {}
-      },
-      pscDocs: {
-        cmd: 'psc-docs',
-        flags: {
-          hierarchy: '--hierarchy-images'
-        }
-        , single: {}
-        , multi: {}
-      }
-    }
-;
+var fs = require('fs');
 
-function run(cmd, args, k) {
+var path = require('path');
+
+var child_process = require('child_process');
+
+var gutil = require('gulp-util');
+
+var through2 = require('through2');
+
+var lodash = require('lodash');
+
+var which = require('which');
+
+var minimist = require('minimist');
+
+var logalot = require('logalot');
+
+var multipipe = require('multipipe');
+
+var options = require('./options');
+
+var pluginName = 'gulp-purescript';
+
+var psciFilename = '.psci';
+
+var psciLoadCommand = ':m';
+
+var argv = minimist(process.argv.slice(2));
+
+var isVerbose = argv.verbose;
+
+var cwd = process.cwd();
+
+var PluginError = gutil.PluginError;
+
+var File = gutil.File;
+
+function runCommand(cmd, args, k) {
   var err = [ 'Failed to find ' + gutil.colors.magenta(cmd), 'in your path.'
             , 'Please ensure that ' + gutil.colors.magenta(cmd)
-            , 'is available on your system.' ].join(' ')
-    , that = this
-  ;
+            , 'is available on your system.' ].join(' ');
+
+  var that = this;
+
   which(cmd, function(e){
-    if (e) that.emit('error', new gutil.PluginError(PLUGIN, err));
-    else k(cp.spawn(cmd, args));
+    if (e) that.emit('error', new PluginError(pluginName, err));
+    else k(child_process.spawn(cmd, args));
   });
 }
 
-function options(o, opts) {
+function mkOptions(o, opts) {
   return Object.keys(opts || {}).reduce(function(b, a){
     if (a in o.flags && opts[a] === true) return b.concat([o.flags[a]]);
     else if (a in o.single && typeof opts[a] === 'string') return b.concat([o.single[a] + '=' + opts[a]]);
@@ -76,111 +67,131 @@ function options(o, opts) {
   }, []);
 }
 
-function acc(f) {
-  var files = [];
-  return through.obj(function(file, env, cb){
-    if (file.isNull()) {
-      this.push(file);
-      return cb();
+function collectPaths() {
+  var paths = [];
+
+  function transform(chunk, encoding, callback) {
+    if (chunk.isNull()) callback(null, chunk);
+    else if (chunk.isStream()) callback(new PluginError(pluginName, 'Streaming not supported'));
+    else {
+      paths.push(chunk.path);
+      callback();
     }
-    if (file.isStream()) {
-      this.emit('error', new gutil.PluginError(PLUGIN, 'Streaming not supported'));
-      return cb();
-    }
-    files.push(file.path);
-    cb();
-  }, function(cb){f.apply(this, [files, cb]);});
+  }
+
+  function flush(callback){
+    this.push(paths);
+    callback();
+  };
+
+  return through2.obj(transform, flush);
 }
 
 function psc(opts) {
-  var output = opts && opts.output ? opts.output : 'psc.js'
-    , opts$prime = lodash.omit(opts || {}, 'output')
-  ;
+  var output = opts && opts.output ? opts.output : 'psc.js';
+
+  var opts$prime = lodash.omit(opts || {}, 'output');
+
   // The `output` given there will be passed to gulp, not `psc` command.
   // If it was passed to `psc` command, the file will be created and gulp
   // won't receive any input stream from this function.
-  return acc(function(files, cb){
-    var args = files.concat(options(OPTIONS.psc, opts$prime))
-      , buffero = new Buffer(0)
-      , buffere = new Buffer(0)
-      , that = this
-    ;
-    run.apply(this, [OPTIONS.psc.cmd, args, function(cmd){
+  function transform(chunk, encoding, callback) {
+    var args = chunk.concat(mkOptions(options.psc, opts$prime));
+
+    var buffero = new Buffer(0);
+
+    var buffere = new Buffer(0);
+
+    runCommand.apply(this, [options.psc.cmd, args, function(cmd){
       cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+
       cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+
       cmd.on('close', function(code){
-        if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
+        if (code !== 0) callback(new PluginError(pluginName, buffere.toString()));
         else {
-          that.push(new gutil.File({
+          callback(null, new File({
             path: output,
             contents: buffero
           }));
         }
-        cb();
       });
     }]);
-  });
+  }
+
+  return multipipe(collectPaths(), through2.obj(transform));
 }
 
 function pscMake(opts) {
-  return acc(function(files, cb){
-    var args = options(OPTIONS.pscMake, opts).concat(files)
-      , that = this
-    ;
-    run.apply(this, [OPTIONS.pscMake.cmd, args, function(cmd){
-      cmd.stdout.on('data', function(stdout){
-        gutil.log('Stdout from \'' + gutil.colors.cyan(OPTIONS.pscMake.cmd) + '\'\n' + gutil.colors.magenta(stdout));
-      });
-      cmd.stderr.on('data', function(stderr){
-        gutil.log('Stderr from \'' + gutil.colors.cyan(OPTIONS.pscMake.cmd) + '\'\n' + gutil.colors.magenta(stderr));
-      });
+  function transform(chunk, encoding, callback) {
+    var args = mkOptions(options.pscMake, opts).concat(chunk);
+
+    var buffero = new Buffer(0);
+
+    var buffere = new Buffer(0);
+
+    runCommand.apply(this, [options.pscMake.cmd, args, function(cmd){
+      cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+
+      cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+
       cmd.on('close', function(code){
-        if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, OPTIONS.pscMake.cmd + ' has failed'));
-        cb();
+        var message =
+          function() { return [ gutil.colors.cyan(options.pscMake.cmd)
+                              , buffero.toString()
+                              , buffere.toString() ].join('\n') };
+
+        if (code !== 0) callback(new PluginError(pluginName, message()));
+        else {
+          if (isVerbose) logalot.info(message());
+          callback();
+        }
       });
     }]);
-  });
+  };
+
+  return multipipe(collectPaths(), through2.obj(transform));
 }
 
 function pscDocs(opts) {
-  return acc(function(files, cb){
-    var args = options(OPTIONS.pscDocs, opts).concat(files)
-      , buffero = new Buffer(0)
-      , buffere = new Buffer(0)
-      , that = this
-    ;
-    run.apply(this, [OPTIONS.pscDocs.cmd, args, function(cmd){
+  function transform(chunk, encoding, callback) {
+    var args = mkOptions(options.pscDocs, opts).concat(chunk);
+
+    var buffero = new Buffer(0);
+
+    var buffere = new Buffer(0);
+
+    runCommand.apply(this, [options.pscDocs.cmd, args, function(cmd){
       cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+
       cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+
       cmd.on('close', function(code){
-        if (!!code) that.emit('error', new gutil.PluginError(PLUGIN, buffere.toString()));
+        if (code !== 0) callback(new PluginError(pluginName, buffere.toString()));
         else {
-          that.push(new gutil.File({
+          callback(null, new File({
             path: '.',
             contents: buffero
           }));
         }
-        cb();
       });
     }]);
-  });
+  }
+
+  return multipipe(collectPaths(), through2.obj(transform));
 }
 
 function dotPsci(opts) {
-  var stream = through.obj(function(file, env, cb){
-    if (file.isNull()) {
-      this.push(file);
-      return cb();
+  function transform(chunk, encoding, callback) {
+    if (chunk.isNull()) callback(null, chunk);
+    else if (chunk.isStream()) callback(new PluginError(pluginName, 'Streaming not supported'));
+    else {
+      var buffer = new Buffer(psciLoadCommand + ' ' + path.relative(cwd, chunk.path) + '\n');
+      callback(null, buffer);
     }
-    if (file.isStream()) {
-      this.emit('error', new gutil.PluginError(PLUGIN, 'Streaming not supported'));
-      return cb();
-    }
-    this.push(new Buffer(LOADM + ' ' + path.relative(CWD, file.path) + '\n'));
-    cb();
-  });
-  stream.pipe(fs.createWriteStream(DOTPSCI));
-  return stream;
+  }
+
+  return multipipe(through2.obj(transform), fs.createWriteStream(psciFilename));
 }
 
 module.exports = {
