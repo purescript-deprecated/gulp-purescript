@@ -1,112 +1,113 @@
 'use strict';
 
-var gutil = require('gulp-util')
-  , assert = require('assert')
-  , fs = require('fs')
-  , purescript = require('./')
-;
+var fs = require('fs');
 
-it('should compile purescript', function(cb){
-  var stream = purescript.psc({noPrelude: true})
-    , fixture = 'Fixture1.purs'
-  ;
+var test = require('tape');
 
-  stream.on('data', function(file){
-    assert(/Fixture/.test(file.contents.toString()));
-    assert.equal('psc.js', file.path);
-    cb();
-  });
+var gulp = require('gulp');
 
-  fs.readFile(fixture, function(e, buffer){
-    if (e) cb(assert(false));
-    else {
-      stream.write(new gutil.File({
-        cwd: __dirname,
-        base: __dirname,
-        path: __dirname + '/' + fixture,
-        contents: buffer,
-        stat: {mtime: new Date()}
-      }));
-      stream.end();
-    }
+var through2 = require('through2');
+
+var rewire = require('rewire');
+
+var purescript = require('./');
+
+test('psc - basic', function(t){
+  t.plan(2);
+
+  var stream = purescript.psc({noPrelude: true});
+
+  var fixture = 'Fixture1.purs';
+
+  gulp.src(fixture).pipe(stream).
+                    pipe(through2.obj(function(chunk, encoding, callback){
+    t.ok(/Fixture/.test(chunk.contents.toString()), 'should have a compiled result');
+    t.equal('psc.js', chunk.path);
+    callback();
+  }));
+});
+
+test('psc - output option', function(t){
+  t.plan(2);
+
+  var fixture = 'Fixture1.purs';
+
+  var output  = 'output.js';
+
+  var stream  = purescript.psc({noPrelude: true, output: output});
+
+  gulp.src(fixture).pipe(stream).
+                    pipe(through2.obj(function(chunk, encoding, callback){
+    t.ok(!fs.existsSync(__dirname + '/' + output), 'output file should not exist');
+    t.equal(output, chunk.path);
+    callback();
+  }));
+});
+
+test('psc - failure', function(t){
+  t.plan(2);
+
+  var stream = purescript.psc({noPrelude: true});
+
+  var fixture = 'Fixture2.purs';
+
+  gulp.src(fixture).pipe(stream).
+                    on('error', function(e){
+    t.ok(/"where"/.test(e.message), 'should have a failure message');
+    t.equal('Error', e.name);
   });
 });
 
-it('should compile purescript to specified output, without creating file', function(cb){
-  var fixture = 'Fixture1.purs'
-    , output  = 'output.js'
-    , stream  = purescript.psc({noPrelude: true, output: output})
-  ;
 
-  stream.on('data', function(file){
-    assert(!fs.existsSync(__dirname + "/" + output));
-    assert.equal(output, file.path);
-    cb();
-  });
+test('psci - basic', function(t){
+  t.plan(1);
 
-  fs.readFile(fixture, function(e, buffer){
-    if (e) cb(assert(false));
-    else {
-      stream.write(new gutil.File({
-        cwd: __dirname,
-        base: __dirname,
-        path: __dirname + '/' + fixture,
-        contents: buffer,
-        stat: {mtime: new Date()}
-      }));
-      stream.end();
+  var stream = purescript.dotPsci();
+
+  var fixture = 'Fixture1.purs';
+
+  var output = ':m ' + fixture + '\n';
+
+  gulp.src(fixture).pipe(stream).
+                    pipe(through2.obj(function(chunk, encoding, callback){
+    t.equal(output, chunk.toString());
+    callback();
+  }));
+});
+
+test('psc-make - basic', function(t){
+  t.plan(1);
+
+  var purescript = rewire('./');
+
+  var mock = {
+    success: function(){
+      t.fail('Should not get a log message');
     }
+  };
+
+  purescript.__set__('logalot', mock);
+
+  var stream = purescript.pscMake({noPrelude: true});
+
+  var fixture = 'Fixture1.purs';
+
+  gulp.src(fixture).pipe(stream).
+                    on('finish', function(){
+    t.pass('should output a compiled result');
   });
 });
 
-it('should fail to compile with an error message', function(cb){
-  var stream = purescript.psc({noPrelude: true})
-    , fixture = 'Fixture2.purs'
-  ;
+test('psc-make - error', function(t){
+  t.plan(2);
 
-  stream.on('error', function(e){
-    assert("Error" === e.name);
-    assert(/expecting "where"/.test(e.message));
-    cb();
-  });
+  var stream = purescript.pscMake({noPrelude: true});
 
-  fs.readFile(fixture, function(e, buffer){
-    if (e) cb(assert(false));
-    else {
-      stream.write(new gutil.File({
-        cwd: __dirname,
-        base: __dirname,
-        path: __dirname + '/' + fixture,
-        contents: buffer,
-        stat: {mtime: new Date()}
-      }));
-      stream.end();
-    }
-  });
-});
+  var fixture = 'Fixture2.purs';
 
-it('should write a .psci file', function(cb){
-  var stream = purescript.dotPsci()
-    , fixture = 'Fixture1.purs'
-    , output = ':m ' + fixture + '\n'
-  ;
-
-  stream.on('data', function(line){
-    assert.equal(output, line.toString());
-    cb();
-  });
-
-  fs.readFile(fixture, function(e, buffer){
-    if (e) cb(assert(false));
-    else {
-      stream.write(new gutil.File({
-        cwd: __dirname,
-        base: __dirname,
-        path: __dirname + '/' + fixture,
-        contents: buffer,
-        stat: {mtime: new Date()}
-      }));
-      stream.end();
-    }
+  gulp.src(fixture).pipe(stream).
+                    on('error', function(e){
+    t.ok(/"where"/.test(e.message), 'should have a failure message');
+    t.equal('Error', e.name);
   });
 });

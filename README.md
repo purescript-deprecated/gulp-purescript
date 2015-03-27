@@ -91,3 +91,8 @@ Invokes the `pscDocs` command.
 
 Generates a `.psci` file in the current directory. Each source file is
 added with the `:m` command.
+
+## Command line arguments
+
+The `--verbose` argument will display the output during the `psc-make`
+command. For example `gulp --verbose`.
