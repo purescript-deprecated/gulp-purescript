@@ -10,24 +10,27 @@ Install with [npm](https://npmjs.org/package/gulp-purescript)
 npm install gulp-purescript --save-dev
 ```
 
+## Binaries
+
+This plugin requires that the PureScript binaries first be installed. The binaries may be installed using the [purescript](https://www.npmjs.com/package/purescript) NPM package or as described on the PureScript [installation](https://github.com/purescript/purescript/wiki/Language-Guide:-Getting-Started#installation) section of the GitHub wiki.
+
 ## Example
 
 ```js
-var gulp = require('gulp')
-  , purescript = require('gulp-purescript')
-;
+var gulp = require('gulp');
+
+var purescript = require('gulp-purescript');
+
 gulp.task('purescript', function(){
-  return (
-    gulp.src('src/**/*.purs.hs').
-      pipe(purescript.psc({noPrelude: true})).
-      pipe(gulp.dest('dist/'))
-  );
+  return gulp.src('src/**/*.purs').
+         pipe(purescript.psc({noPrelude: true})).
+         pipe(gulp.dest('build'));
 });
 ```
 
 ## API
 
-Refer to the PureScript [usage](http://docs.purescript.org/en/latest/start.html#compiler-usage) section for additional details on the behaviour of each option below.
+Refer to the PureScript [compiler usage](https://github.com/purescript/purescript/wiki/Language-Guide:-Getting-Started#compiler-usage) section of the Github wiki for additional details on the behaviour of each option below.
 
 ### purescript.psc(options)
 
