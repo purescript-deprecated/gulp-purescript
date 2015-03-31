@@ -20,9 +20,15 @@ var logalot = require('logalot');
 
 var multipipe = require('multipipe');
 
+var resolveBin = require('resolve-bin');
+
 var options = require('./options');
 
-var pluginName = 'gulp-purescript';
+var packageJson = require('./package.json');
+
+var pluginName = packageJson.name;
+
+var purescriptPackage = 'purescript';
 
 var psciFilename = '.psci';
 
@@ -38,16 +44,24 @@ var PluginError = gutil.PluginError;
 
 var File = gutil.File;
 
-function runCommand(cmd, args, k) {
-  var err = [ 'Failed to find ' + gutil.colors.magenta(cmd), 'in your path.'
-            , 'Please ensure that ' + gutil.colors.magenta(cmd)
-            , 'is available on your system.' ].join(' ');
+function resolve(cmd, callback) {
+  var err = 'Failed to find ' + gutil.colors.cyan(cmd) + '. Please ensure it is available on your system.';
 
-  var that = this;
+  resolveBin(purescriptPackage, {executable: cmd}, function(e, bin){
+    if (!e) callback(null, bin);
+    else {
+      which(cmd, function(e){
+        if (e) callback(err);
+        else callback(null, cmd);
+      });
+    }
+  });
+}
 
-  which(cmd, function(e){
-    if (e) that.emit('error', new PluginError(pluginName, err));
-    else k(child_process.spawn(cmd, args));
+function execute(cmd, args, callback) {
+  resolve(cmd, function(e, bin){
+    if (e) callback(new PluginError(pluginName, e));
+    else callback(null, child_process.spawn(bin, args));
   });
 }
 
@@ -102,21 +116,24 @@ function psc(opts) {
 
     var buffere = new Buffer(0);
 
-    runCommand.apply(this, [options.psc.cmd, args, function(cmd){
-      cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+    execute(options.psc.cmd, args, function(e, cmd){
+      if (e) callback(e);
+      else {
+        cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
 
-      cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+        cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
 
-      cmd.on('close', function(code){
-        if (code !== 0) callback(new PluginError(pluginName, buffere.toString()));
-        else {
-          callback(null, new File({
-            path: output,
-            contents: buffero
-          }));
-        }
-      });
-    }]);
+        cmd.on('close', function(code){
+          if (code !== 0) callback(new PluginError(pluginName, buffere.toString()));
+          else {
+            callback(null, new File({
+              path: output,
+              contents: buffero
+            }));
+          }
+        });
+      }
+    });
   }
 
   return multipipe(collectPaths(), through2.obj(transform));
@@ -130,24 +147,27 @@ function pscMake(opts) {
 
     var buffere = new Buffer(0);
 
-    runCommand.apply(this, [options.pscMake.cmd, args, function(cmd){
-      cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+    execute(options.pscMake.cmd, args, function(e, cmd){
+      if (e) callback(e);
+      else {
+        cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
 
-      cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+        cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
 
-      cmd.on('close', function(code){
-        var message =
-          function() { return [ gutil.colors.cyan(options.pscMake.cmd)
-                              , buffero.toString()
-                              , buffere.toString() ].join('\n') };
+        cmd.on('close', function(code){
+          var message =
+            function() { return [ gutil.colors.cyan(options.pscMake.cmd)
+                                , buffero.toString()
+                                , buffere.toString() ].join('\n') };
 
-        if (code !== 0) callback(new PluginError(pluginName, message()));
-        else {
-          if (isVerbose) logalot.info(message());
-          callback();
-        }
-      });
-    }]);
+          if (code !== 0) callback(new PluginError(pluginName, message()));
+          else {
+            if (isVerbose) logalot.info(message());
+            callback();
+          }
+        });
+      }
+    });
   };
 
   return multipipe(collectPaths(), through2.obj(transform));
@@ -161,21 +181,24 @@ function pscDocs(opts) {
 
     var buffere = new Buffer(0);
 
-    runCommand.apply(this, [options.pscDocs.cmd, args, function(cmd){
-      cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
+    execute(options.pscDocs.cmd, args, function(e, cmd){
+      if (e) callback(e);
+      else {
+        cmd.stdout.on('data', function(stdout){buffero = Buffer.concat([buffero, new Buffer(stdout)]);});
 
-      cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
+        cmd.stderr.on('data', function(stderr){buffere = Buffer.concat([buffere, new Buffer(stderr)]);});
 
-      cmd.on('close', function(code){
-        if (code !== 0) callback(new PluginError(pluginName, buffere.toString()));
-        else {
-          callback(null, new File({
-            path: '.',
-            contents: buffero
-          }));
-        }
-      });
-    }]);
+        cmd.on('close', function(code){
+          if (code !== 0) callback(new PluginError(pluginName, buffere.toString()));
+          else {
+            callback(null, new File({
+              path: '.',
+              contents: buffero
+            }));
+          }
+        });
+      }
+    });
   }
 
   return multipipe(collectPaths(), through2.obj(transform));
