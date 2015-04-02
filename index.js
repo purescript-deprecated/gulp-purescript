@@ -1,5 +1,7 @@
 'use strict';
 
+var os = require('os');
+
 var fs = require('fs');
 
 var path = require('path');
@@ -44,24 +46,25 @@ var PluginError = gutil.PluginError;
 
 var File = gutil.File;
 
-function resolve(cmd, callback) {
+function resolve(cmd, args, callback) {
   var err = 'Failed to find ' + gutil.colors.cyan(cmd) + '. Please ensure it is available on your system.';
 
   resolveBin(purescriptPackage, {executable: cmd}, function(e, bin){
-    if (!e) callback(null, bin);
+    if (!e && os.platform() === 'win32') callback(null, 'node', [bin].concat(args))
+    else if (!e) callback(null, bin, args);
     else {
       which(cmd, function(e){
         if (e) callback(err);
-        else callback(null, cmd);
+        else callback(null, cmd, args);
       });
     }
   });
 }
 
 function execute(cmd, args, callback) {
-  resolve(cmd, function(e, bin){
+  resolve(cmd, args, function(e, bin, args$prime){
     if (e) callback(new PluginError(pluginName, e));
-    else callback(null, child_process.spawn(bin, args));
+    else callback(null, child_process.spawn(bin, args$prime));
   });
 }
 
