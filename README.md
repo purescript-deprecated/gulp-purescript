@@ -40,26 +40,30 @@ Invokes the `psc` command.
 
  - **noPrelude**: Boolean value that toggles `--no-prelude`
   -  Do not include the Prelude in the generated Javascript.
- - **noOpts**: Boolean value that toggles `--no-opts`
-  - Disable all optimizations.
- - **noMagicDo**: Boolean value that toggles `--no-magic-do`
-  - Turn off optimizations which inline calls to >>= for the Eff monad.
  - **noTco**: Boolean value that toggles `--no-tco`
   - Turn off tail-call elimination.
- - **verboseErrors**: Boolean value that toggles `--verbose-errors`
-  - Generate verbose error messages.
+ - **noMagicDo**: Boolean value that toggles `--no-magic-do`
+  - Turn off optimizations which inline calls to >>= for the Eff monad.
  - **main**: Boolean or string value that sets `--main` or `--main=<string>`
   - Generate a call to main in the specified module after all other generated Javascript. Defaults to Main if the option is used but no value is provided.
+ - **noOpts**: Boolean value that toggles `--no-opts`
+  - Disable all optimizations.
+ - **verboseErrors**: Boolean value that toggles `--verbose-errors`
+  - Generate verbose error messages.
+ - **comments**: Boolean value that toggles `--comments`
+  - Include comments in generated code.
  - **browserNamespace**: String value that sets `--browser-namespace=<string>`
   - Specify the namespace that PureScript modules will be exported to when running in the browser.
  - **externs**: String value that sets `--externs=<string>`
   - Write a list of foreign imports declarations to the specified file in addition to generating Javascript output.
- - **modules**: String or array value that sets one or more `--module=<string>`
-  - If specified, any code which is not referenced transitively from this module will be removed. This argument can be used multiple times.
- - **codegen**: String or array value that sets one or more `--codegen=<string>`
-  - A list of modules for which Javascript and externs should be generated. This argument can be used multiple times.
- - **output**: String value that specifies the output file(this won't set'`--output=<string>`)
+ - **module**: Array of string values that sets one or more `--module=<string>`
+  - If specified, any code which is not referenced transitively from this module will be removed.
+ - **codegen**: Array of string values that sets one or more `--codegen=<string>`
+  - A array of modules for which JavaScript and externs should be generated.
+ - **output**: String value that specifies the output file. Note that this will not set `--output=<string>` because the resulting file is piped through the Gulp stream.
   - Write the generated Javascript to the specified file.
+ - **noPrefix**: Boolean value that toggles `--no-prefix`
+  - Do not include the comment header.
 
 ### purescript.pscMake(options)
 
