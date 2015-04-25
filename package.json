@@ -12,11 +12,17 @@
     "node": ">=0.10.0"
   },
   "files": [
-    "index.js",
-    "options.js"
+    "index.js"
   ],
   "scripts": {
-    "test": "node test.js | tap-spec"
+    "test:run": "node test.js | tap-spec",
+    "test": "npm run-script build && npm run-script test:run",
+    "build:bootstrap": "npm install gulp-purescript@0.3.1",
+    "build": "npm run-script build:bootstrap && npm run-script build:compile && npm run-script build:package",
+    "build:compile": "gulp build",
+    "build:package": "./node_modules/.bin/webpack --progress --colors --profile --bail",
+    "build:json": "./node_modules/.bin/webpack --progress --colors --profile --bail --json > index.json",
+    "prepublish": "npm run-script build"
   },
   "keywords": [
     "gulpplugin",
@@ -24,7 +30,6 @@
   ],
   "dependencies": {
     "gulp-util": "^3.0.4",
-    "lodash": "^3.5.0",
     "logalot": "^2.1.0",
     "minimist": "^1.1.1",
     "multipipe": "^0.1.2",
@@ -33,9 +38,14 @@
     "which": "^1.0.9"
   },
   "devDependencies": {
+    "del": "^1.1.1",
     "gulp": "^3.8.11",
+    "gulp-plumber": "^1.0.0",
+    "json-loader": "^0.5.1",
     "rewire": "^2.3.1",
+    "run-sequence": "^1.0.2",
     "tap-spec": "^2.2.2",
-    "tape": "^3.5.0"
+    "tape": "^3.5.0",
+    "webpack": "^1.8.9"
   }
 }

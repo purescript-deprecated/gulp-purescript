@@ -53,7 +53,7 @@ test('psc - failure', function(t){
 
   gulp.src(fixture).pipe(stream).
                     on('error', function(e){
-    t.ok(/"where"/.test(e.message), 'should have a failure message');
+    t.ok(e.message && e.message !== '', 'should have a failure message');
     t.equal('Error', e.name);
   });
 });

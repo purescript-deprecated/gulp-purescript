@@ -1,5 +1,7 @@
-.DS_Store
-*.log
 .psci
-node_modules
-output
+npm-debug.log
+index.js
+node_modules/
+bower_components/
+build/
+output/

@@ -32,70 +32,110 @@ gulp.task('purescript', function(){
 
 Refer to the PureScript [compiler usage](https://github.com/purescript/purescript/wiki/Language-Guide:-Getting-Started#compiler-usage) section of the Github wiki for additional details on the behaviour of each option below.
 
-### purescript.psc(options)
+### `purescript.psc(options)`
 
-Invokes the `psc` command.
+Invokes the `psc` command. The following options are supported.
 
-#### options
+###### `noPrelude` (Boolean)
 
- - **noPrelude**: Boolean value that toggles `--no-prelude`
-  -  Do not include the Prelude in the generated Javascript.
- - **noOpts**: Boolean value that toggles `--no-opts`
-  - Disable all optimizations.
- - **noMagicDo**: Boolean value that toggles `--no-magic-do`
-  - Turn off optimizations which inline calls to >>= for the Eff monad.
- - **noTco**: Boolean value that toggles `--no-tco`
-  - Turn off tail-call elimination.
- - **verboseErrors**: Boolean value that toggles `--verbose-errors`
-  - Generate verbose error messages.
- - **main**: Boolean or string value that sets `--main` or `--main=<string>`
-  - Generate a call to main in the specified module after all other generated Javascript. Defaults to Main if the option is used but no value is provided.
- - **browserNamespace**: String value that sets `--browser-namespace=<string>`
-  - Specify the namespace that PureScript modules will be exported to when running in the browser.
- - **externs**: String value that sets `--externs=<string>`
-  - Write a list of foreign imports declarations to the specified file in addition to generating Javascript output.
- - **modules**: String or array value that sets one or more `--module=<string>`
-  - If specified, any code which is not referenced transitively from this module will be removed. This argument can be used multiple times.
- - **codegen**: String or array value that sets one or more `--codegen=<string>`
-  - A list of modules for which Javascript and externs should be generated. This argument can be used multiple times.
- - **output**: String value that specifies the output file(this won't set'`--output=<string>`)
-  - Write the generated Javascript to the specified file.
+Toggles `--no-prelude` that omits the Prelude.
 
-### purescript.pscMake(options)
+###### `noTco` (Boolean)
 
-Invokes the `psc-make` command.
+Toggles `--no-tco` that disables tail-call optimizations.
 
-#### options
+###### `noMagicDo` (Boolean)
 
- - **noPrelude**: Boolean value that toggles `--no-prelude`
-  - Do not include the Prelude in the generated Javascript.
- - **noOpts**: Boolean value that toggles `--no-opts`
-  - Disable all optimizations.
- - **noMagicDo**: Boolean value that toggles `--no-magic-do`
-  - Turn off optimizations which inline calls to >>= for the Eff monad.
- - **noTco**: Boolean value that toggles `--no-tco`
-  - Turn off tail-call elimination.
- - **verboseErrors**: Boolean value that toggles `--verbose-errors`
-  - Generate verbose error messages.
- - **browserNamespace**: String value that sets `--browser-namespace=<string>`
-  - Specify the namespace that PureScript modules will be exported to when running in the browser.
- - **output**: String value that sets `--output=<string>`
-  - Write the generated Javascript to the specified file.
+Toggles `--no-magic-do` that disables optimizations overloading the do keyword generating efficient code for the `Eff` monad.
 
-### purescript.pscDocs(options)
+###### `main` (Boolean or String)
 
-Invokes the `pscDocs` command.
+Toggles `--main` or sets `--main=<string>` that generates code to run the `main` function in the specified module or the `Main` module by default.
 
-#### options
+###### `noOpts` (Boolean)
 
- - hierarchy: Boolean value that toggles `--hierarchy-images`
+Toggles `--no-opts` that skips the optimization phase.
 
-### purescript.dotPsci()
+###### `verboseErrors` (Boolean)
 
-Generates a `.psci` file in the current directory. Each source file is
-added with the `:m` command.
+Toggles `--verbose-errors` that displays verbose error messages.
+
+###### `comments` (Boolean)
+
+Toggles `--comments` that includes comments in generated code.
+
+###### `browserNamespace` (String)
+
+Sets `--browser-namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
+
+###### `externs` (String)
+
+Sets `--externs=<string>` that specifies the externs file.
+
+###### `module` (String Array)
+
+Sets one or more `--module=<string>` that enables dead code elimination, removing all code without a transitive dependency of one of the specified modules.
+
+###### `codegen` (String Array)
+
+Sets one or more `--codegen=<string>` that generates code and extenrs for the specified modules.
+
+###### `output` (String)
+
+Sets the path value of the [File](https://github.com/wearefractal/vinyl) passed through the Gulp stream. Note that this will not set `--output=<string>`.
+
+###### `noPrefix` (Boolean)
+
+Toggles `--no-prefix` that does not include the comment header.
+
+### `purescript.pscMake(options)`
+
+Invokes the `psc-make` command. The following options are supported.
+
+###### `noPrelude` (Boolean)
+
+Toggles `--no-prelude` that omits the Prelude.
+
+###### `noTco` (Boolean)
+
+Toggles `--no-tco` that disables tail-call optimizations.
+
+###### `noMagicDo` (Boolean)
+
+Toggles `--no-magic-do` that disables optimizations overloading the do keyword generating efficient code for the `Eff` monad.
+
+###### `noOpts` (Boolean)
+
+Toggles `--no-opts` that skips the optimization phase.
+
+###### `verboseErrors` (Boolean)
+
+Toggles `--verbose-errors` that displays verbose error messages.
+
+###### `comments` (Boolean)
+
+Toggles `--comments` that includes comments in generated code.
+
+###### `output` (String)
+
+Sets `--output=<string>` the specifies the output directory, `output` by default.
+
+###### `noPrefix` (Boolean)
+
+Toggles `--no-prefix` that does not include the comment header.
+
+### `purescript.pscDocs(options)`
+
+Invokes the `pscDocs` command. The following options are supported.
+
+###### `format` (markdown | etags | ctags)
+
+Sets `--output=<markdown|etags|ctags>` that specifies the output format.
+
+### `purescript.dotPsci()`
+
+Generates a `.psci` file in the current directory. Each source file is added with the `:m` command.
 
 ## Command line arguments
 
-The `--verbose` argument will display the output during the `psc-make`
-command. For example `gulp --verbose`.
+The `--verbose` argument will display the output during the `psc-make` command. For example `gulp --verbose`.
