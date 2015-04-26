@@ -5,6 +5,8 @@ module GulpPurescript.Options
   , pscDocsOptions
   ) where
 
+import Control.Alt ((<|>))
+
 import Data.Array (concat)
 import Data.Either (Either(..), either)
 import Data.Foreign (Foreign(), ForeignError(TypeMismatch), F())
@@ -74,8 +76,7 @@ newtype Psc
   = Psc { noPrelude :: NullOrUndefined Boolean
         , noTco :: NullOrUndefined Boolean
         , noMagicDo :: NullOrUndefined Boolean
-        , mainNoArg :: NullOrUndefined Boolean
-        , mainWithArg :: NullOrUndefined String
+        , main :: NullOrUndefined (Either Boolean String)
         , noOpts :: NullOrUndefined Boolean
         , verboseErrors :: NullOrUndefined Boolean
         , comments :: NullOrUndefined Boolean
@@ -103,27 +104,29 @@ newtype PscDocs
 
 data Format = Markdown | ETags | CTags
 
+instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b) where
+  read a = (Left <$> read a :: F a) <|>
+           (Right <$> read a :: F b)
+
 instance isForeignPsc :: IsForeign Psc where
   read obj =
-    (\a b c d e f g h i j k l m n ->
+    (\a b c d e f g h i j k l m ->
     Psc { noPrelude: a
         , noTco: b
         , noMagicDo: c
-        , mainNoArg: d
-        , mainWithArg: e
-        , noOpts: f
-        , verboseErrors: g
-        , comments: h
-        , browserNamespace: i
-        , "module": j
-        , codegen: k
-        , output: l
-        , externs: m
-        , noPrefix: n
+        , main: d
+        , noOpts: e
+        , verboseErrors: f
+        , comments: g
+        , browserNamespace: h
+        , "module": i
+        , codegen: j
+        , output: k
+        , externs: l
+        , noPrefix: m
         }) <$> readProp noPreludeKey obj
            <*> readProp noTcoKey obj
            <*> readProp noMagicDoKey obj
-           <*> readProp mainKey obj
            <*> readProp mainKey obj
            <*> readProp noOptsKey obj
            <*> readProp verboseErrorsKey obj
@@ -171,6 +174,11 @@ mkBoolean key opt = maybe [] (\a -> if a then ["--" ++ key] else []) (runNullOrU
 mkString :: String -> NullOrUndefined String -> [String]
 mkString key opt = maybe [] (\a -> ["--" ++ key ++ "=" ++ a]) (runNullOrUndefined opt)
 
+mkBooleanString :: String -> NullOrUndefined (Either Boolean String) -> [String]
+mkBooleanString key opt = maybe [] (either (\a -> mkBoolean key (NullOrUndefined $ Just a))
+                                           (\a -> mkString key (NullOrUndefined $ Just a)))
+                                   (runNullOrUndefined opt)
+
 mkStringArray :: String -> NullOrUndefined [String] -> [String]
 mkStringArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
                                               <$> (fromMaybe [] $ runNullOrUndefined opt)
@@ -187,8 +195,7 @@ foldPscOptions :: Psc -> [String]
 foldPscOptions (Psc a) = mkBoolean noPreludeOpt a.noPrelude <>
                          mkBoolean noTcoOpt a.noTco <>
                          mkBoolean noMagicDoOpt a.noMagicDo <>
-                         mkBoolean mainOpt a.mainNoArg <>
-                         mkString mainOpt a.mainWithArg <>
+                         mkBooleanString mainOpt a.main <>
                          mkBoolean noOptsOpt a.noOpts <>
                          mkBoolean verboseErrorsOpt a.verboseErrors <>
                          mkBoolean commentsOpt a.comments <>

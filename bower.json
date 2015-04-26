@@ -10,6 +10,7 @@
     "purescript-arrays": "0.3.7",
     "purescript-transformers": "0.5.5",
     "purescript-monad-eff": "0.1.0",
-    "purescript-tuples": "0.3.4"
+    "purescript-tuples": "0.3.4",
+    "purescript-control": "0.2.6"
   }
 }
