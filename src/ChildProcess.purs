@@ -30,7 +30,7 @@ function spawnFn(command, args, errback, callback) {
     });
 
     process.stderr.on('data', function(data){
-      stdout = Buffer.concat([stderr, new Buffer(data)]);
+      stderr = Buffer.concat([stderr, new Buffer(data)]);
     });
 
     process.on('close', function(code){
