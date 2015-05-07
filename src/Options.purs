@@ -72,6 +72,10 @@ formatOpt = "format"
 
 formatKey = formatOpt
 
+ffiOpt = "ffi"
+
+ffiKey = ffiOpt
+
 newtype Psc
   = Psc { noPrelude :: NullOrUndefined Boolean
         , noTco :: NullOrUndefined Boolean
@@ -86,6 +90,7 @@ newtype Psc
         , output :: NullOrUndefined String
         , externs :: NullOrUndefined String
         , noPrefix :: NullOrUndefined Boolean
+        , ffi :: NullOrUndefined [String]
         }
 
 newtype PscMake
@@ -97,6 +102,7 @@ newtype PscMake
             , comments :: NullOrUndefined Boolean
             , noPrefix :: NullOrUndefined Boolean
             , output :: NullOrUndefined String
+            , ffi :: NullOrUndefined [String]
             }
 
 newtype PscDocs
@@ -110,7 +116,7 @@ instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b)
 
 instance isForeignPsc :: IsForeign Psc where
   read obj =
-    (\a b c d e f g h i j k l m ->
+    (\a b c d e f g h i j k l m o ->
     Psc { noPrelude: a
         , noTco: b
         , noMagicDo: c
@@ -124,6 +130,7 @@ instance isForeignPsc :: IsForeign Psc where
         , output: k
         , externs: l
         , noPrefix: m
+        , ffi: o
         }) <$> readProp noPreludeKey obj
            <*> readProp noTcoKey obj
            <*> readProp noMagicDoKey obj
@@ -137,10 +144,11 @@ instance isForeignPsc :: IsForeign Psc where
            <*> readProp outputKey obj
            <*> readProp externsKey obj
            <*> readProp noPrefixKey obj
+           <*> readProp ffiKey obj
 
 instance isForeignPscMake :: IsForeign PscMake where
   read obj =
-    (\a b c d e f g h ->
+    (\a b c d e f g h i ->
     PscMake { output: a
             , noPrelude: b
             , noTco: c
@@ -149,6 +157,7 @@ instance isForeignPscMake :: IsForeign PscMake where
             , verboseErrors: f
             , comments: g
             , noPrefix: h
+            , ffi: i
             }) <$> readProp outputKey obj
                <*> readProp noPreludeKey obj
                <*> readProp noTcoKey obj
@@ -157,6 +166,7 @@ instance isForeignPscMake :: IsForeign PscMake where
                <*> readProp verboseErrorsKey obj
                <*> readProp commentsKey obj
                <*> readProp noPrefixKey obj
+               <*> readProp ffiKey obj
 
 instance isForeignPscDocs :: IsForeign PscDocs where
   read obj = (\a -> PscDocs { format: a }) <$> readProp formatKey obj
@@ -204,7 +214,8 @@ foldPscOptions (Psc a) = mkBoolean noPreludeOpt a.noPrelude <>
                          mkStringArray codegenOpt a.codegen <>
                          mkString outputOpt a.output <>
                          mkString externsOpt a.externs <>
-                         mkBoolean noPrefixOpt a.noPrefix
+                         mkBoolean noPrefixOpt a.noPrefix <>
+                         mkStringArray ffiOpt a.ffi
 
 pscOptions :: Foreign -> [String]
 pscOptions opts = either (const []) foldPscOptions parsed
@@ -226,7 +237,8 @@ pscMakeOptions opts = either (const []) fold parsed
                            mkBoolean noOptsOpt a.noOpts <>
                            mkBoolean verboseErrorsOpt a.verboseErrors <>
                            mkBoolean commentsOpt a.comments <>
-                           mkBoolean noPrefixOpt a.noPrefix
+                           mkBoolean noPrefixOpt a.noPrefix <>
+                           mkStringArray ffiOpt a.ffi
 
 pscDocsOptions :: Foreign -> [String]
 pscDocsOptions opts = either (const []) fold parsed

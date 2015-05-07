@@ -78,7 +78,7 @@ Sets one or more `--module=<string>` that enables dead code elimination, removin
 
 ###### `codegen` (String Array)
 
-Sets one or more `--codegen=<string>` that generates code and extenrs for the specified modules.
+Sets one or more `--codegen=<string>` that generates code and externs for the specified modules.
 
 ###### `output` (String)
 
@@ -87,6 +87,10 @@ Sets the path value of the [File](https://github.com/wearefractal/vinyl) passed 
 ###### `noPrefix` (Boolean)
 
 Toggles `--no-prefix` that does not include the comment header.
+
+###### `ffi` (String Array)
+
+Sets one or more `--ffi=<string>` that specifies the location of files for code that is included with a `foreign import` in the PureScript source.
 
 ### `purescript.pscMake(options)`
 
@@ -123,6 +127,10 @@ Sets `--output=<string>` the specifies the output directory, `output` by default
 ###### `noPrefix` (Boolean)
 
 Toggles `--no-prefix` that does not include the comment header.
+
+###### `ffi` (String Array)
+
+Sets one or more `--ffi=<string>` that specifies the location of files for code that is included with a `foreign import` in the PureScript source.
 
 ### `purescript.pscDocs(options)`
 
