@@ -1,5 +1,22 @@
 # Module Documentation
 
+## Module GulpPurescript.Buffer
+
+#### `Buffer`
+
+``` purescript
+data Buffer
+```
+
+
+#### `mkBufferFromString`
+
+``` purescript
+mkBufferFromString :: String -> Buffer
+```
+
+
+
 ## Module GulpPurescript.ChildProcess
 
 #### `ChildProcess`
@@ -60,7 +77,7 @@ mkPluginError :: String -> String -> Error
 #### `mkFile`
 
 ``` purescript
-mkFile :: String -> String -> File
+mkFile :: String -> Buffer -> File
 ```
 
 
@@ -166,6 +183,13 @@ platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
 
 ## Module GulpPurescript.Options
 
+#### `isForeignEither`
+
+``` purescript
+instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b)
+```
+
+
 #### `isForeignPsc`
 
 ``` purescript
@@ -198,6 +222,13 @@ instance isForeignFormat :: IsForeign Format
 
 ``` purescript
 pscOptions :: Foreign -> [String]
+```
+
+
+#### `pscOptionsNoOutput`
+
+``` purescript
+pscOptionsNoOutput :: Foreign -> Tuple (Maybe String) [String]
 ```
 
 
