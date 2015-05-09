@@ -90,7 +90,7 @@ Toggles `--no-prefix` that does not include the comment header.
 
 ###### `ffi` (String Array)
 
-Sets one or more `--ffi=<string>` that specifies the location of files for code that is included with a `foreign import` in the PureScript source.
+Sets one or more `--ffi=<string>` that specifies the files for code that is included with a `foreign import` in the PureScript source.
 
 ### `purescript.pscMake(options)`
 
@@ -130,7 +130,7 @@ Toggles `--no-prefix` that does not include the comment header.
 
 ###### `ffi` (String Array)
 
-Sets one or more `--ffi=<string>` that specifies the location of files for code that is included with a `foreign import` in the PureScript source.
+Sets one or more `--ffi=<string>` that specifies files for code that is included with a `foreign import` in the PureScript source.
 
 ### `purescript.pscDocs(options)`
 
@@ -139,6 +139,14 @@ Invokes the `pscDocs` command. The following options are supported.
 ###### `format` (markdown | etags | ctags)
 
 Sets `--output=<markdown|etags|ctags>` that specifies the output format.
+
+###### `docgen` (String | String Array | Object)
+
+Sets `--docgen=...` that can be used to filter the modules documentation is generated for.
+
+- If a string value is provided, the documentation for that single module will be generated.
+- If a list of strings is provided, the documentation for all listed modules will be generated.
+- If an object with module name/filename pairs (for example, `{ Module: "docs/Module.md" }`) is provided, files will be written for each of the modules. In this mode, the task requires no `dest` as no value is returned.
 
 ### `purescript.dotPsci()`
 
