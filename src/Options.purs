@@ -193,6 +193,20 @@ mkStringArray :: String -> NullOrUndefined [String] -> [String]
 mkStringArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
                                               <$> (fromMaybe [] $ runNullOrUndefined opt)
 
+mkPathArray :: String -> NullOrUndefined [String] -> [String]
+mkPathArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
+                                            <$> (fromMaybe [] (runNullOrUndefined opt) >>= expandGlob)
+
+foreign import expandGlob
+  """
+  var expandGlob = (function () {
+    var glob = require("glob");
+    return function (pattern) {
+      return glob.sync(pattern);
+    };
+  }());
+  """ :: String -> [String]
+
 mkFormat :: String -> NullOrUndefined Format -> [String]
 mkFormat key opt = mkString key (maybe j (\a -> case a of
                                                      Markdown -> i "markdown"
@@ -215,7 +229,7 @@ foldPscOptions (Psc a) = mkBoolean noPreludeOpt a.noPrelude <>
                          mkString outputOpt a.output <>
                          mkString externsOpt a.externs <>
                          mkBoolean noPrefixOpt a.noPrefix <>
-                         mkStringArray ffiOpt a.ffi
+                         mkPathArray ffiOpt a.ffi
 
 pscOptions :: Foreign -> [String]
 pscOptions opts = either (const []) foldPscOptions parsed
@@ -238,7 +252,7 @@ pscMakeOptions opts = either (const []) fold parsed
                            mkBoolean verboseErrorsOpt a.verboseErrors <>
                            mkBoolean commentsOpt a.comments <>
                            mkBoolean noPrefixOpt a.noPrefix <>
-                           mkStringArray ffiOpt a.ffi
+                           mkPathArray ffiOpt a.ffi
 
 pscDocsOptions :: Foreign -> [String]
 pscDocsOptions opts = either (const []) fold parsed
