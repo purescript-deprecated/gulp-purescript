@@ -116,60 +116,58 @@ instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b)
 
 instance isForeignPsc :: IsForeign Psc where
   read obj =
-    (\a b c d e f g h i j k l m o ->
-    Psc { noPrelude: a
-        , noTco: b
-        , noMagicDo: c
-        , main: d
-        , noOpts: e
-        , verboseErrors: f
-        , comments: g
-        , browserNamespace: h
-        , "module": i
-        , codegen: j
-        , output: k
-        , externs: l
-        , noPrefix: m
-        , ffi: o
-        }) <$> readProp noPreludeKey obj
-           <*> readProp noTcoKey obj
-           <*> readProp noMagicDoKey obj
-           <*> readProp mainKey obj
-           <*> readProp noOptsKey obj
-           <*> readProp verboseErrorsKey obj
-           <*> readProp commentsKey obj
-           <*> readProp browserNamespaceKey obj
-           <*> readProp moduleKey obj
-           <*> readProp codegenKey obj
-           <*> readProp outputKey obj
-           <*> readProp externsKey obj
-           <*> readProp noPrefixKey obj
-           <*> readProp ffiKey obj
-
-instance isForeignPscMake :: IsForeign PscMake where
-  read obj =
-    (\a b c d e f g h i ->
-    PscMake { output: a
-            , noPrelude: b
-            , noTco: c
-            , noMagicDo: d
-            , noOpts: e
-            , verboseErrors: f
-            , comments: g
-            , noPrefix: h
-            , ffi: i
-            }) <$> readProp outputKey obj
-               <*> readProp noPreludeKey obj
+    Psc <$> ({ noPrelude: _
+             , noTco: _
+             , noMagicDo: _
+             , main: _
+             , noOpts: _
+             , verboseErrors: _
+             , comments: _
+             , browserNamespace: _
+             , "module": _
+             , codegen: _
+             , output: _
+             , externs: _
+             , noPrefix: _
+             , ffi: _
+             } <$> readProp noPreludeKey obj
                <*> readProp noTcoKey obj
                <*> readProp noMagicDoKey obj
+               <*> readProp mainKey obj
                <*> readProp noOptsKey obj
                <*> readProp verboseErrorsKey obj
                <*> readProp commentsKey obj
+               <*> readProp browserNamespaceKey obj
+               <*> readProp moduleKey obj
+               <*> readProp codegenKey obj
+               <*> readProp outputKey obj
+               <*> readProp externsKey obj
                <*> readProp noPrefixKey obj
-               <*> readProp ffiKey obj
+               <*> readProp ffiKey obj)
+
+instance isForeignPscMake :: IsForeign PscMake where
+  read obj =
+    PscMake <$> ({ output: _
+                 , noPrelude: _
+                 , noTco: _
+                 , noMagicDo: _
+                 , noOpts: _
+                 , verboseErrors: _
+                 , comments: _
+                 , noPrefix: _
+                 , ffi: _
+                 } <$> readProp outputKey obj
+                   <*> readProp noPreludeKey obj
+                   <*> readProp noTcoKey obj
+                   <*> readProp noMagicDoKey obj
+                   <*> readProp noOptsKey obj
+                   <*> readProp verboseErrorsKey obj
+                   <*> readProp commentsKey obj
+                   <*> readProp noPrefixKey obj
+                   <*> readProp ffiKey obj)
 
 instance isForeignPscDocs :: IsForeign PscDocs where
-  read obj = (\a -> PscDocs { format: a }) <$> readProp formatKey obj
+  read obj = PscDocs <<< { format: _ } <$> readProp formatKey obj
 
 instance isForeignFormat :: IsForeign Format where
   read val = read val >>= (\a -> case a of
