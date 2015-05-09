@@ -7,12 +7,14 @@ module GulpPurescript.Options
 
 import Control.Alt ((<|>))
 
-import Data.Array (concat)
+import Data.Array (concat, singleton)
 import Data.Either (Either(..), either)
 import Data.Foreign (Foreign(), ForeignError(TypeMismatch), F())
 import Data.Foreign.Class (IsForeign, read, readProp)
+import Data.Foreign.Keys (keys)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), runNullOrUndefined)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Traversable (for)
 import Data.Tuple (Tuple())
 import Data.Tuple.Nested (tuple2)
 
@@ -76,6 +78,10 @@ ffiOpt = "ffi"
 
 ffiKey = ffiOpt
 
+docgenOpt = "docgen"
+
+docgenKey = docgenOpt
+
 newtype Psc
   = Psc { noPrelude :: NullOrUndefined Boolean
         , noTco :: NullOrUndefined Boolean
@@ -106,7 +112,9 @@ newtype PscMake
             }
 
 newtype PscDocs
-  = PscDocs { format :: NullOrUndefined Format }
+  = PscDocs { format :: NullOrUndefined Format
+            , docgen :: NullOrUndefined Foreign
+            }
 
 data Format = Markdown | ETags | CTags
 
@@ -167,7 +175,11 @@ instance isForeignPscMake :: IsForeign PscMake where
                    <*> readProp ffiKey obj)
 
 instance isForeignPscDocs :: IsForeign PscDocs where
-  read obj = PscDocs <<< { format: _ } <$> readProp formatKey obj
+  read obj =
+    PscDocs <$> ({ format: _
+                 , docgen: _
+                 } <$> readProp formatKey obj
+                   <*> readProp docgenOpt obj)
 
 instance isForeignFormat :: IsForeign Format where
   read val = read val >>= (\a -> case a of
@@ -194,6 +206,28 @@ mkStringArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
 mkPathArray :: String -> NullOrUndefined [String] -> [String]
 mkPathArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
                                             <$> (fromMaybe [] (runNullOrUndefined opt) >>= expandGlob)
+
+mkDocgen :: String -> NullOrUndefined Foreign -> [String]
+mkDocgen key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
+                                         <$> (maybe [] parse (runNullOrUndefined opt))
+  where
+  parse :: Foreign -> [String]
+  parse obj = either (const []) id $ parseName obj
+                                 <|> parseList obj
+                                 <|> parseObj obj
+                                 <|> pure []
+
+  parseName :: Foreign -> F [String]
+  parseName obj = singleton <$> read obj
+
+  parseList :: Foreign -> F [String]
+  parseList obj = read obj
+
+  parseObj :: Foreign -> F [String]
+  parseObj obj = do
+    modules <- keys obj
+    for modules \m -> (\f -> m ++ ":" ++ f) <$> readProp m obj
+
 
 foreign import expandGlob
   """
@@ -255,4 +289,5 @@ pscMakeOptions opts = either (const []) fold parsed
 pscDocsOptions :: Foreign -> [String]
 pscDocsOptions opts = either (const []) fold parsed
   where parsed = read opts :: F PscDocs
-        fold (PscDocs a) = mkFormat formatOpt a.format
+        fold (PscDocs a) = mkFormat formatOpt a.format <>
+                           mkDocgen docgenOpt a.docgen
