@@ -7,12 +7,14 @@ module GulpPurescript.Options
 
 import Control.Alt ((<|>))
 
-import Data.Array (concat)
+import Data.Array (concat, singleton)
 import Data.Either (Either(..), either)
 import Data.Foreign (Foreign(), ForeignError(TypeMismatch), F())
 import Data.Foreign.Class (IsForeign, read, readProp)
+import Data.Foreign.Keys (keys)
 import Data.Foreign.NullOrUndefined (NullOrUndefined(..), runNullOrUndefined)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Traversable (for)
 import Data.Tuple (Tuple())
 import Data.Tuple.Nested (tuple2)
 
@@ -76,6 +78,10 @@ ffiOpt = "ffi"
 
 ffiKey = ffiOpt
 
+docgenOpt = "docgen"
+
+docgenKey = docgenOpt
+
 newtype Psc
   = Psc { noPrelude :: NullOrUndefined Boolean
         , noTco :: NullOrUndefined Boolean
@@ -106,7 +112,9 @@ newtype PscMake
             }
 
 newtype PscDocs
-  = PscDocs { format :: NullOrUndefined Format }
+  = PscDocs { format :: NullOrUndefined Format
+            , docgen :: NullOrUndefined Foreign
+            }
 
 data Format = Markdown | ETags | CTags
 
@@ -116,60 +124,62 @@ instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b)
 
 instance isForeignPsc :: IsForeign Psc where
   read obj =
-    (\a b c d e f g h i j k l m o ->
-    Psc { noPrelude: a
-        , noTco: b
-        , noMagicDo: c
-        , main: d
-        , noOpts: e
-        , verboseErrors: f
-        , comments: g
-        , browserNamespace: h
-        , "module": i
-        , codegen: j
-        , output: k
-        , externs: l
-        , noPrefix: m
-        , ffi: o
-        }) <$> readProp noPreludeKey obj
-           <*> readProp noTcoKey obj
-           <*> readProp noMagicDoKey obj
-           <*> readProp mainKey obj
-           <*> readProp noOptsKey obj
-           <*> readProp verboseErrorsKey obj
-           <*> readProp commentsKey obj
-           <*> readProp browserNamespaceKey obj
-           <*> readProp moduleKey obj
-           <*> readProp codegenKey obj
-           <*> readProp outputKey obj
-           <*> readProp externsKey obj
-           <*> readProp noPrefixKey obj
-           <*> readProp ffiKey obj
-
-instance isForeignPscMake :: IsForeign PscMake where
-  read obj =
-    (\a b c d e f g h i ->
-    PscMake { output: a
-            , noPrelude: b
-            , noTco: c
-            , noMagicDo: d
-            , noOpts: e
-            , verboseErrors: f
-            , comments: g
-            , noPrefix: h
-            , ffi: i
-            }) <$> readProp outputKey obj
-               <*> readProp noPreludeKey obj
+    Psc <$> ({ noPrelude: _
+             , noTco: _
+             , noMagicDo: _
+             , main: _
+             , noOpts: _
+             , verboseErrors: _
+             , comments: _
+             , browserNamespace: _
+             , "module": _
+             , codegen: _
+             , output: _
+             , externs: _
+             , noPrefix: _
+             , ffi: _
+             } <$> readProp noPreludeKey obj
                <*> readProp noTcoKey obj
                <*> readProp noMagicDoKey obj
+               <*> readProp mainKey obj
                <*> readProp noOptsKey obj
                <*> readProp verboseErrorsKey obj
                <*> readProp commentsKey obj
+               <*> readProp browserNamespaceKey obj
+               <*> readProp moduleKey obj
+               <*> readProp codegenKey obj
+               <*> readProp outputKey obj
+               <*> readProp externsKey obj
                <*> readProp noPrefixKey obj
-               <*> readProp ffiKey obj
+               <*> readProp ffiKey obj)
+
+instance isForeignPscMake :: IsForeign PscMake where
+  read obj =
+    PscMake <$> ({ output: _
+                 , noPrelude: _
+                 , noTco: _
+                 , noMagicDo: _
+                 , noOpts: _
+                 , verboseErrors: _
+                 , comments: _
+                 , noPrefix: _
+                 , ffi: _
+                 } <$> readProp outputKey obj
+                   <*> readProp noPreludeKey obj
+                   <*> readProp noTcoKey obj
+                   <*> readProp noMagicDoKey obj
+                   <*> readProp noOptsKey obj
+                   <*> readProp verboseErrorsKey obj
+                   <*> readProp commentsKey obj
+                   <*> readProp noPrefixKey obj
+                   <*> readProp ffiKey obj)
 
 instance isForeignPscDocs :: IsForeign PscDocs where
-  read obj = (\a -> PscDocs { format: a }) <$> readProp formatKey obj
+  read obj =
+    PscDocs <$> ({ format: _
+                 , docgen: _
+                 } <$> readProp formatKey obj
+                   <*> readProp docgenOpt obj)
 
 instance isForeignFormat :: IsForeign Format where
   read val = read val >>= (\a -> case a of
@@ -193,6 +203,42 @@ mkStringArray :: String -> NullOrUndefined [String] -> [String]
 mkStringArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
                                               <$> (fromMaybe [] $ runNullOrUndefined opt)
 
+mkPathArray :: String -> NullOrUndefined [String] -> [String]
+mkPathArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
+                                            <$> (fromMaybe [] (runNullOrUndefined opt) >>= expandGlob)
+
+mkDocgen :: String -> NullOrUndefined Foreign -> [String]
+mkDocgen key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
+                                         <$> (maybe [] parse (runNullOrUndefined opt))
+  where
+  parse :: Foreign -> [String]
+  parse obj = either (const []) id $ parseName obj
+                                 <|> parseList obj
+                                 <|> parseObj obj
+                                 <|> pure []
+
+  parseName :: Foreign -> F [String]
+  parseName obj = singleton <$> read obj
+
+  parseList :: Foreign -> F [String]
+  parseList obj = read obj
+
+  parseObj :: Foreign -> F [String]
+  parseObj obj = do
+    modules <- keys obj
+    for modules \m -> (\f -> m ++ ":" ++ f) <$> readProp m obj
+
+
+foreign import expandGlob
+  """
+  var expandGlob = (function () {
+    var glob = require("glob");
+    return function (pattern) {
+      return glob.sync(pattern);
+    };
+  }());
+  """ :: String -> [String]
+
 mkFormat :: String -> NullOrUndefined Format -> [String]
 mkFormat key opt = mkString key (maybe j (\a -> case a of
                                                      Markdown -> i "markdown"
@@ -215,7 +261,7 @@ foldPscOptions (Psc a) = mkBoolean noPreludeOpt a.noPrelude <>
                          mkString outputOpt a.output <>
                          mkString externsOpt a.externs <>
                          mkBoolean noPrefixOpt a.noPrefix <>
-                         mkStringArray ffiOpt a.ffi
+                         mkPathArray ffiOpt a.ffi
 
 pscOptions :: Foreign -> [String]
 pscOptions opts = either (const []) foldPscOptions parsed
@@ -238,9 +284,10 @@ pscMakeOptions opts = either (const []) fold parsed
                            mkBoolean verboseErrorsOpt a.verboseErrors <>
                            mkBoolean commentsOpt a.comments <>
                            mkBoolean noPrefixOpt a.noPrefix <>
-                           mkStringArray ffiOpt a.ffi
+                           mkPathArray ffiOpt a.ffi
 
 pscDocsOptions :: Foreign -> [String]
 pscDocsOptions opts = either (const []) fold parsed
   where parsed = read opts :: F PscDocs
-        fold (PscDocs a) = mkFormat formatOpt a.format
+        fold (PscDocs a) = mkFormat formatOpt a.format <>
+                           mkDocgen docgenOpt a.docgen

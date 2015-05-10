@@ -140,47 +140,6 @@ multipipe2 :: forall a b c. Stream a b -> Stream b c -> Stream a c
 
 
 
-## Module GulpPurescript.OS
-
-#### `OS`
-
-``` purescript
-data OS :: !
-```
-
-
-#### `Platform`
-
-``` purescript
-data Platform
-  = Darwin 
-  | Linux 
-  | Win32 
-```
-
-
-#### `showPlatform`
-
-``` purescript
-instance showPlatform :: Show Platform
-```
-
-
-#### `isForeignPlatform`
-
-``` purescript
-instance isForeignPlatform :: IsForeign Platform
-```
-
-
-#### `platform`
-
-``` purescript
-platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
-```
-
-
-
 ## Module GulpPurescript.Options
 
 #### `isForeignEither`
@@ -243,6 +202,47 @@ pscMakeOptions :: Foreign -> [String]
 
 ``` purescript
 pscDocsOptions :: Foreign -> [String]
+```
+
+
+
+## Module GulpPurescript.OS
+
+#### `OS`
+
+``` purescript
+data OS :: !
+```
+
+
+#### `Platform`
+
+``` purescript
+data Platform
+  = Darwin 
+  | Linux 
+  | Win32 
+```
+
+
+#### `showPlatform`
+
+``` purescript
+instance showPlatform :: Show Platform
+```
+
+
+#### `isForeignPlatform`
+
+``` purescript
+instance isForeignPlatform :: IsForeign Platform
+```
+
+
+#### `platform`
+
+``` purescript
+platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
 ```
 
 
