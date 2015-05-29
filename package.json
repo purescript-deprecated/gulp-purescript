@@ -29,6 +29,8 @@
     "purescript"
   ],
   "dependencies": {
+    "cross-spawn": "^0.4.0",
+    "glob": "^5.0.5",
     "gulp-util": "^3.0.4",
     "logalot": "^2.1.0",
     "minimist": "^1.1.1",

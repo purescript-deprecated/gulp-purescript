@@ -17,7 +17,7 @@ spawn command args = makeAff $ runFn4 spawnFn command args
 foreign import spawnFn """
 function spawnFn(command, args, errback, callback) {
   return function(){
-    var child_process = require('child_process');
+    var child_process = require('cross-spawn');
 
     var process = child_process.spawn(command, args);
 
