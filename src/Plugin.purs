@@ -12,6 +12,7 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (Error())
 import Control.Monad.Error.Class (catchError, throwError)
 
+import Data.Either (Either(..), either)
 import Data.Foreign (Foreign())
 import Data.Foreign.Class (IsForeign, read, readProp)
 import Data.Maybe (Maybe(Just), maybe, fromMaybe)
@@ -72,8 +73,9 @@ foreign import cwd "var cwd = process.cwd();" :: String
 
 foreign import argv "var argv = process.argv.slice(2);" :: [String]
 
-pluginError :: forall eff. String -> Aff (Effects eff) Error
-pluginError msg = liftEff $ flip mkPluginError msg <$> (maybe "" (\(Package a) -> a.name)) <$> package
+throwPluginError :: forall eff. String -> Aff (Effects eff) _
+throwPluginError msg = liftEff (flip mkPluginError msg <$> (maybe "" (\(Package a) -> a.name))
+                                                       <$> package) >>= throwError
 
 resolve :: forall eff. String -> [String] -> Aff (Effects eff) (Tuple String [String])
 resolve cmd args = catchError primary fallback
@@ -90,9 +92,7 @@ resolve cmd args = catchError primary fallback
     fallback _ = (const $ tuple2 cmd args) <$> catchError (which cmd) mapError
 
     mapError :: Error -> Aff (Effects eff) String
-    mapError _ = pluginError ( "Failed to find " ++ cmd ++ ". " ++
-                               "Please ensure it is available on your system."
-                             ) >>= throwError
+    mapError _ = throwPluginError ("Failed to find " ++ cmd ++ ". " ++ "Please ensure it is available on your system.")
 
 execute :: forall eff. String -> [String] -> Aff (Effects eff) String
 execute cmd args = do
@@ -103,30 +103,35 @@ execute cmd args = do
 pathsStream :: forall eff. Eff (through2 :: Through2 | eff) (Stream File [String])
 pathsStream = accStream run
   where run i = if fileIsStream i
-                   then pluginError "Streaming is not supported" >>= throwError
+                   then throwPluginError "Streaming is not supported"
                    else pure $ filePath i
 
 psc :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
 psc opts = multipipe2 <$> pathsStream <*> objStream run
   where run i = case pscOptionsNoOutput opts of
-                     Tuple out opt ->
+                     Left e -> throwPluginError (show e)
+                     Right (Tuple out opt) ->
                      mkFile (fromMaybe pscOutputDefault out) <$> mkBufferFromString
                                                              <$> execute pscCommand (i <> opt)
 
 pscMake :: forall eff. Foreign -> Eff (Effects eff) (Stream File Unit)
 pscMake opts = multipipe2 <$> pathsStream <*> objStream run
-  where run i = do output <- execute pscMakeCommand (i <> pscMakeOptions opts)
+  where run i = do output <- either (throwPluginError <<< show)
+                                    (\a -> execute pscMakeCommand (i <> a))
+                                    (pscMakeOptions opts)
                    if isVerbose
                       then liftEff $ info $ pscMakeCommand ++ "\n" ++ output
                       else pure unit
 
 pscDocs :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
 pscDocs opts = multipipe2 <$> pathsStream <*> objStream run
-  where run i = mkFile "." <$> mkBufferFromString
-                           <$> execute pscDocsCommand (pscDocsOptions opts <> i)
+  where run i = case pscDocsOptions opts of
+                     Left e -> throwPluginError (show e)
+                     Right a-> mkFile "." <$> mkBufferFromString
+                                          <$> execute pscDocsCommand (a <> i)
 
 dotPsci :: forall eff. Eff (Effects eff) (Stream File Unit)
 dotPsci = multipipe2 <$> objStream run <*> createWriteStream psciFilename
   where run i = if fileIsStream i
-                   then pluginError "Streaming is not supported" >>= throwError
+                   then throwPluginError "Streaming is not supported"
                    else pure $ psciLoadCommand ++ " " ++ relative cwd (filePath i) ++ "\n"

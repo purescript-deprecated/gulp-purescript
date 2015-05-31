@@ -263,18 +263,17 @@ foldPscOptions (Psc a) = mkBoolean noPreludeOpt a.noPrelude <>
                          mkBoolean noPrefixOpt a.noPrefix <>
                          mkPathArray ffiOpt a.ffi
 
-pscOptions :: Foreign -> [String]
-pscOptions opts = either (const []) foldPscOptions parsed
-  where parsed = read opts :: F Psc
+pscOptions :: Foreign -> Either ForeignError [String]
+pscOptions opts = foldPscOptions <$> (read opts :: F Psc)
 
-pscOptionsNoOutput :: Foreign -> Tuple (Maybe String) [String]
-pscOptionsNoOutput opts = either (const $ tuple2 Nothing []) fold parsed
+pscOptionsNoOutput :: Foreign -> Either ForeignError (Tuple (Maybe String) [String])
+pscOptionsNoOutput opts = fold <$> parsed
   where parsed = read opts :: F Psc
         fold (Psc a) = tuple2 (runNullOrUndefined a.output)
                               (foldPscOptions (Psc $ a { output = NullOrUndefined Nothing }))
 
-pscMakeOptions :: Foreign -> [String]
-pscMakeOptions opts = either (const []) fold parsed
+pscMakeOptions :: Foreign -> Either ForeignError [String]
+pscMakeOptions opts = fold <$> parsed
   where parsed = read opts :: F PscMake
         fold (PscMake a) = mkString outputOpt a.output <>
                            mkBoolean noPreludeOpt a.noPrelude <>
@@ -286,8 +285,8 @@ pscMakeOptions opts = either (const []) fold parsed
                            mkBoolean noPrefixOpt a.noPrefix <>
                            mkPathArray ffiOpt a.ffi
 
-pscDocsOptions :: Foreign -> [String]
-pscDocsOptions opts = either (const []) fold parsed
+pscDocsOptions :: Foreign -> Either ForeignError [String]
+pscDocsOptions opts = fold <$> parsed
   where parsed = read opts :: F PscDocs
         fold (PscDocs a) = mkFormat formatOpt a.format <>
                            mkDocgen docgenOpt a.docgen

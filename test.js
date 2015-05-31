@@ -2,6 +2,8 @@
 
 var fs = require('fs');
 
+var path = require('path');
+
 var test = require('tape');
 
 var gulp = require('gulp');
@@ -58,6 +60,21 @@ test('psc - failure', function(t){
   });
 });
 
+test('psc - invalid option type', function(t){
+  t.plan(2);
+
+  var fixture = 'Fixture1.purs';
+
+  var moduleName = path.basename(fixture, '.purs');
+
+  var stream  = purescript.psc({noPrelude: true, module: moduleName});
+
+  gulp.src(fixture).pipe(stream).
+                    on('error', function(e){
+    t.ok(/type mismatch/i.test(e.message), 'should have a failure message');
+    t.equal('Error', e.name);
+  });
+});
 
 test('psci - basic', function(t){
   t.plan(1);
@@ -108,6 +125,20 @@ test('psc-make - error', function(t){
   gulp.src(fixture).pipe(stream).
                     on('error', function(e){
     t.ok(/"where"/.test(e.message), 'should have a failure message');
+    t.equal('Error', e.name);
+  });
+});
+
+test('psc-make - invalid option type', function(t){
+  t.plan(2);
+
+  var stream = purescript.pscMake({noPrelude: 'invalid'});
+
+  var fixture = 'Fixture1.purs';
+
+  gulp.src(fixture).pipe(stream).
+                    on('error', function(e){
+    t.ok(/type mismatch/i.test(e.message), 'should have a failure message');
     t.equal('Error', e.name);
   });
 });
