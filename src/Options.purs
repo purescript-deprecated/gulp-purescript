@@ -96,7 +96,7 @@ newtype Psc
         , output :: NullOrUndefined String
         , externs :: NullOrUndefined String
         , noPrefix :: NullOrUndefined Boolean
-        , ffi :: NullOrUndefined [String]
+        , ffi :: NullOrUndefined PathArray
         }
 
 newtype PscMake
@@ -108,13 +108,17 @@ newtype PscMake
             , comments :: NullOrUndefined Boolean
             , noPrefix :: NullOrUndefined Boolean
             , output :: NullOrUndefined String
-            , ffi :: NullOrUndefined [String]
+            , ffi :: NullOrUndefined PathArray
             }
 
 newtype PscDocs
   = PscDocs { format :: NullOrUndefined Format
-            , docgen :: NullOrUndefined Foreign
+            , docgen :: NullOrUndefined Docgen
             }
+
+newtype Docgen = Docgen Foreign
+
+newtype PathArray = PathArray [String]
 
 data Format = Markdown | ETags | CTags
 
@@ -181,6 +185,12 @@ instance isForeignPscDocs :: IsForeign PscDocs where
                  } <$> readProp formatKey obj
                    <*> readProp docgenOpt obj)
 
+instance isForeignPathArray :: IsForeign PathArray where
+  read val = PathArray <$> read val
+
+instance isForeignDocgen :: IsForeign Docgen where
+  read val = Docgen <$> read val
+
 instance isForeignFormat :: IsForeign Format where
   read val = read val >>= (\a -> case a of
                                       "markdown" -> Right Markdown
@@ -188,46 +198,26 @@ instance isForeignFormat :: IsForeign Format where
                                       "ctags" -> Right CTags
                                       a -> Left $ TypeMismatch "Format" a)
 
-mkBoolean :: String -> NullOrUndefined Boolean -> [String]
-mkBoolean key opt = maybe [] (\a -> if a then ["--" ++ key] else []) (runNullOrUndefined opt)
+class CommandLineOption a where
+  opt :: String -> NullOrUndefined a -> [String]
 
-mkString :: String -> NullOrUndefined String -> [String]
-mkString key opt = maybe [] (\a -> ["--" ++ key ++ "=" ++ a]) (runNullOrUndefined opt)
+instance commandLineOptionBoolean :: CommandLineOption Boolean where
+  opt key val = maybe [] (\a -> if a then ["--" ++ key] else []) (runNullOrUndefined val)
 
-mkBooleanString :: String -> NullOrUndefined (Either Boolean String) -> [String]
-mkBooleanString key opt = maybe [] (either (\a -> mkBoolean key (NullOrUndefined $ Just a))
-                                           (\a -> mkString key (NullOrUndefined $ Just a)))
-                                   (runNullOrUndefined opt)
+instance commandLineOptionString :: CommandLineOption String where
+  opt key val = maybe [] (\a -> ["--" ++ key ++ "=" ++ a]) (runNullOrUndefined val)
 
-mkStringArray :: String -> NullOrUndefined [String] -> [String]
-mkStringArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
-                                              <$> (fromMaybe [] $ runNullOrUndefined opt)
+instance commandLineOptionEither :: (CommandLineOption a, CommandLineOption b) => CommandLineOption (Either a b) where
+  opt key val = maybe [] (either (\a -> opt key (NullOrUndefined $ Just a))
+                                 (\a -> opt key (NullOrUndefined $ Just a)))
+                      (runNullOrUndefined val)
 
-mkPathArray :: String -> NullOrUndefined [String] -> [String]
-mkPathArray key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
-                                            <$> (fromMaybe [] (runNullOrUndefined opt) >>= expandGlob)
+instance commandLineOptionArray :: (CommandLineOption a) => CommandLineOption [a] where
+  opt key val = concat $ opt key <$> (NullOrUndefined <<< Just)
+                                 <$> (fromMaybe [] $ runNullOrUndefined val)
 
-mkDocgen :: String -> NullOrUndefined Foreign -> [String]
-mkDocgen key opt = concat $ mkString key <$> (NullOrUndefined <<< Just)
-                                         <$> (maybe [] parse (runNullOrUndefined opt))
-  where
-  parse :: Foreign -> [String]
-  parse obj = either (const []) id $ parseName obj
-                                 <|> parseList obj
-                                 <|> parseObj obj
-                                 <|> pure []
-
-  parseName :: Foreign -> F [String]
-  parseName obj = singleton <$> read obj
-
-  parseList :: Foreign -> F [String]
-  parseList obj = read obj
-
-  parseObj :: Foreign -> F [String]
-  parseObj obj = do
-    modules <- keys obj
-    for modules \m -> (\f -> m ++ ":" ++ f) <$> readProp m obj
-
+instance commandLineOptionPathArray :: CommandLineOption PathArray where
+  opt key val =  opt key (NullOrUndefined ((\(PathArray a) -> a >>= expandGlob) <$> (runNullOrUndefined val)))
 
 foreign import expandGlob
   """
@@ -239,29 +229,49 @@ foreign import expandGlob
   }());
   """ :: String -> [String]
 
-mkFormat :: String -> NullOrUndefined Format -> [String]
-mkFormat key opt = mkString key (maybe j (\a -> case a of
-                                                     Markdown -> i "markdown"
-                                                     ETags -> i "etags"
-                                                     CTags -> i "ctags") $ runNullOrUndefined opt)
-  where i a = NullOrUndefined $ Just a
-        j = NullOrUndefined Nothing
+instance commandLineOptionDocgen :: CommandLineOption Docgen where
+  opt key val =  opt key (NullOrUndefined (parseDocgen <$> (runNullOrUndefined val)))
+
+parseDocgen :: Docgen -> [String]
+parseDocgen (Docgen obj) = either (const []) id $ parseName obj
+                                              <|> parseList obj
+                                              <|> parseObj obj
+                                              <|> pure []
+  where
+    parseName :: Foreign -> F [String]
+    parseName obj = singleton <$> read obj
+
+    parseList :: Foreign -> F [String]
+    parseList obj = read obj
+
+    parseObj :: Foreign -> F [String]
+    parseObj obj = do
+      modules <- keys obj
+      for modules \m -> (\f -> m ++ ":" ++ f) <$> readProp m obj
+
+instance commandLineOptionFormat :: CommandLineOption Format where
+  opt key val = opt key (maybe (NullOrUndefined Nothing)
+                               (\a -> case a of
+                                           Markdown -> NullOrUndefined (Just "markdown")
+                                           ETags -> NullOrUndefined (Just "etags")
+                                           CTags -> NullOrUndefined (Just "ctags"))
+                               (runNullOrUndefined val))
 
 foldPscOptions :: Psc -> [String]
-foldPscOptions (Psc a) = mkBoolean noPreludeOpt a.noPrelude <>
-                         mkBoolean noTcoOpt a.noTco <>
-                         mkBoolean noMagicDoOpt a.noMagicDo <>
-                         mkBooleanString mainOpt a.main <>
-                         mkBoolean noOptsOpt a.noOpts <>
-                         mkBoolean verboseErrorsOpt a.verboseErrors <>
-                         mkBoolean commentsOpt a.comments <>
-                         mkString browserNamespaceOpt a.browserNamespace <>
-                         mkStringArray moduleOpt a."module" <>
-                         mkStringArray codegenOpt a.codegen <>
-                         mkString outputOpt a.output <>
-                         mkString externsOpt a.externs <>
-                         mkBoolean noPrefixOpt a.noPrefix <>
-                         mkPathArray ffiOpt a.ffi
+foldPscOptions (Psc a) = opt noPreludeOpt a.noPrelude <>
+                         opt noTcoOpt a.noTco <>
+                         opt noMagicDoOpt a.noMagicDo <>
+                         opt mainOpt a.main <>
+                         opt noOptsOpt a.noOpts <>
+                         opt verboseErrorsOpt a.verboseErrors <>
+                         opt commentsOpt a.comments <>
+                         opt browserNamespaceOpt a.browserNamespace <>
+                         opt moduleOpt a."module" <>
+                         opt codegenOpt a.codegen <>
+                         opt outputOpt a.output <>
+                         opt externsOpt a.externs <>
+                         opt noPrefixOpt a.noPrefix <>
+                         opt ffiOpt a.ffi
 
 pscOptions :: Foreign -> Either ForeignError [String]
 pscOptions opts = foldPscOptions <$> (read opts :: F Psc)
@@ -275,18 +285,18 @@ pscOptionsNoOutput opts = fold <$> parsed
 pscMakeOptions :: Foreign -> Either ForeignError [String]
 pscMakeOptions opts = fold <$> parsed
   where parsed = read opts :: F PscMake
-        fold (PscMake a) = mkString outputOpt a.output <>
-                           mkBoolean noPreludeOpt a.noPrelude <>
-                           mkBoolean noTcoOpt a.noTco <>
-                           mkBoolean noMagicDoOpt a.noMagicDo <>
-                           mkBoolean noOptsOpt a.noOpts <>
-                           mkBoolean verboseErrorsOpt a.verboseErrors <>
-                           mkBoolean commentsOpt a.comments <>
-                           mkBoolean noPrefixOpt a.noPrefix <>
-                           mkPathArray ffiOpt a.ffi
+        fold (PscMake a) = opt outputOpt a.output <>
+                           opt noPreludeOpt a.noPrelude <>
+                           opt noTcoOpt a.noTco <>
+                           opt noMagicDoOpt a.noMagicDo <>
+                           opt noOptsOpt a.noOpts <>
+                           opt verboseErrorsOpt a.verboseErrors <>
+                           opt commentsOpt a.comments <>
+                           opt noPrefixOpt a.noPrefix <>
+                           opt ffiOpt a.ffi
 
 pscDocsOptions :: Foreign -> Either ForeignError [String]
 pscDocsOptions opts = fold <$> parsed
   where parsed = read opts :: F PscDocs
-        fold (PscDocs a) = mkFormat formatOpt a.format <>
-                           mkDocgen docgenOpt a.docgen
+        fold (PscDocs a) = opt formatOpt a.format <>
+                           opt docgenOpt a.docgen
