@@ -156,10 +156,10 @@ instance isForeignPsc :: IsForeign Psc
 ```
 
 
-#### `isForeignPscMake`
+#### `isForeignPscBundle`
 
 ``` purescript
-instance isForeignPscMake :: IsForeign PscMake
+instance isForeignPscBundle :: IsForeign PscBundle
 ```
 
 
@@ -170,6 +170,27 @@ instance isForeignPscDocs :: IsForeign PscDocs
 ```
 
 
+#### `isForeignDotPsci`
+
+``` purescript
+instance isForeignDotPsci :: IsForeign DotPsci
+```
+
+
+#### `isForeignPathArray`
+
+``` purescript
+instance isForeignPathArray :: IsForeign PathArray
+```
+
+
+#### `isForeignDocgen`
+
+``` purescript
+instance isForeignDocgen :: IsForeign Docgen
+```
+
+
 #### `isForeignFormat`
 
 ``` purescript
@@ -177,31 +198,73 @@ instance isForeignFormat :: IsForeign Format
 ```
 
 
+#### `commandLineOptionBoolean`
+
+``` purescript
+instance commandLineOptionBoolean :: CommandLineOption Boolean
+```
+
+
+#### `commandLineOptionString`
+
+``` purescript
+instance commandLineOptionString :: CommandLineOption String
+```
+
+
+#### `commandLineOptionEither`
+
+``` purescript
+instance commandLineOptionEither :: (CommandLineOption a, CommandLineOption b) => CommandLineOption (Either a b)
+```
+
+
+#### `commandLineOptionArray`
+
+``` purescript
+instance commandLineOptionArray :: (CommandLineOption a) => CommandLineOption [a]
+```
+
+
+#### `commandLineOptionPathArray`
+
+``` purescript
+instance commandLineOptionPathArray :: CommandLineOption PathArray
+```
+
+
+#### `commandLineOptionDocgen`
+
+``` purescript
+instance commandLineOptionDocgen :: CommandLineOption Docgen
+```
+
+
+#### `commandLineOptionFormat`
+
+``` purescript
+instance commandLineOptionFormat :: CommandLineOption Format
+```
+
+
 #### `pscOptions`
 
 ``` purescript
-pscOptions :: Foreign -> [String]
+pscOptions :: Foreign -> Either ForeignError [String]
 ```
 
 
-#### `pscOptionsNoOutput`
+#### `pscBundleOptions`
 
 ``` purescript
-pscOptionsNoOutput :: Foreign -> Tuple (Maybe String) [String]
-```
-
-
-#### `pscMakeOptions`
-
-``` purescript
-pscMakeOptions :: Foreign -> [String]
+pscBundleOptions :: Foreign -> Either ForeignError [String]
 ```
 
 
 #### `pscDocsOptions`
 
 ``` purescript
-pscDocsOptions :: Foreign -> [String]
+pscDocsOptions :: Foreign -> Either ForeignError [String]
 ```
 
 
@@ -308,21 +371,21 @@ type Effects eff = (which :: Which, through2 :: Through2, resolveBin :: ResolveB
 #### `psc`
 
 ``` purescript
-psc :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
+psc :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
 ```
 
 
-#### `pscMake`
+#### `pscBundle`
 
 ``` purescript
-pscMake :: forall eff. Foreign -> Eff (Effects eff) (Stream File Unit)
+pscBundle :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
 ```
 
 
 #### `pscDocs`
 
 ``` purescript
-pscDocs :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
+pscDocs :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (File -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
 ```
 
 

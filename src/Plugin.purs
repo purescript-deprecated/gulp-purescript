@@ -1,12 +1,12 @@
 module GulpPurescript.Plugin
   ( Effects()
   , psc
-  , pscMake
+  , pscBundle
   , pscDocs
   , dotPsci
   ) where
 
-import Control.Monad.Aff (Aff())
+import Control.Monad.Aff (Aff(), runAff)
 import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (Error())
@@ -27,7 +27,7 @@ import GulpPurescript.Logalot (Logalot(), info)
 import GulpPurescript.Minimist (minimist)
 import GulpPurescript.Multipipe (multipipe2)
 import GulpPurescript.OS (OS(), Platform(Win32), platform)
-import GulpPurescript.Options (pscOptionsNoOutput, pscMakeOptions, pscDocsOptions)
+import GulpPurescript.Options (pscOptions, pscBundleOptions, pscDocsOptions)
 import GulpPurescript.Package (Pkg(), Package(..), package)
 import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin(), resolveBin)
@@ -59,13 +59,13 @@ psciFilename = ".psci"
 
 psciLoadCommand = ":m"
 
+psciLoadForeignCommand = ":f"
+
 pscCommand = "psc"
 
-pscMakeCommand = "psc-make"
+pscBundleCommand = "psc-bundle"
 
 pscDocsCommand = "psc-docs"
-
-pscOutputDefault = "psc.js"
 
 isVerbose = maybe false (\(Argv a) -> a.verbose) (minimist argv)
 
@@ -100,35 +100,30 @@ execute cmd args = do
   result <- spawn cmd' args'
   return result
 
-pathsStream :: forall eff. Eff (through2 :: Through2 | eff) (Stream File [String])
-pathsStream = accStream run
-  where run i = if fileIsStream i
-                   then throwPluginError "Streaming is not supported"
-                   else pure $ filePath i
+psc :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
+psc opts eb cb = runAff eb cb $ do
+  output <- either (throwPluginError <<< show)
+                   (execute pscCommand)
+                   (pscOptions opts)
+  if isVerbose
+    then liftEff $ info $ pscCommand ++ "\n" ++ output
+    else pure unit
 
-psc :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
-psc opts = multipipe2 <$> pathsStream <*> objStream run
-  where run i = case pscOptionsNoOutput opts of
-                     Left e -> throwPluginError (show e)
-                     Right (Tuple out opt) ->
-                     mkFile (fromMaybe pscOutputDefault out) <$> mkBufferFromString
-                                                             <$> execute pscCommand (i <> opt)
+pscBundle :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
+pscBundle opts eb cb = runAff eb cb $ do
+  output <- either (throwPluginError <<< show)
+                   (execute pscBundleCommand)
+                   (pscBundleOptions opts)
+  if isVerbose
+    then liftEff $ info $ pscCommand ++ "\n" ++ output
+    else pure unit
 
-pscMake :: forall eff. Foreign -> Eff (Effects eff) (Stream File Unit)
-pscMake opts = multipipe2 <$> pathsStream <*> objStream run
-  where run i = do output <- either (throwPluginError <<< show)
-                                    (\a -> execute pscMakeCommand (i <> a))
-                                    (pscMakeOptions opts)
-                   if isVerbose
-                      then liftEff $ info $ pscMakeCommand ++ "\n" ++ output
-                      else pure unit
-
-pscDocs :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
-pscDocs opts = multipipe2 <$> pathsStream <*> objStream run
-  where run i = case pscDocsOptions opts of
-                     Left e -> throwPluginError (show e)
-                     Right a-> mkFile "." <$> mkBufferFromString
-                                          <$> execute pscDocsCommand (a <> i)
+pscDocs :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (File -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
+pscDocs opts eb cb = runAff eb cb $ do
+  case pscDocsOptions opts of
+       Left e  -> throwPluginError (show e)
+       Right a -> mkFile "." <$> mkBufferFromString
+                             <$> execute pscDocsCommand a
 
 dotPsci :: forall eff. Eff (Effects eff) (Stream File Unit)
 dotPsci = multipipe2 <$> objStream run <*> createWriteStream psciFilename
