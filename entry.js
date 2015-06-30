@@ -1,18 +1,19 @@
 'use strict';
 
 var gulpPurescript = require('GulpPurescript.Plugin');
+
 var Promise = require('promise');
 
 function promisify(aff) {
-  return new Promise(function (resolve, reject) {
-    var errback = function (err) {
-      return function () {
-        reject(err);
+  return new Promise(function(resolve, reject){
+    var errback = function(error){
+      return function(){
+        reject(error);
       };
     };
-    var callback = function (x) {
-      return function () {
-        resolve(x);
+    var callback = function(result){
+      return function(){
+        resolve(result);
       };
     };
     aff(errback)(callback)();
@@ -31,9 +32,8 @@ function pscDocs(options) {
   return promisify(gulpPurescript.pscDocs(options));
 }
 
-function dotPsci() {
-  var result = gulpPurescript.dotPsci();
-  return result;
+function psci(options) {
+  return promisify(gulpPurescript.psci(options));
 }
 
 module.exports.psc = psc;
@@ -42,4 +42,4 @@ module.exports.pscBundle = pscBundle;
 
 module.exports.pscDocs = pscDocs;
 
-module.exports.dotPsci = dotPsci;
+module.exports.psci = psci;

@@ -79,17 +79,18 @@ test('psc - invalid option type', function(t){
 test('psci - basic', function(t){
   t.plan(1);
 
-  var stream = purescript.dotPsci();
-
   var fixture = 'Fixture1.purs';
 
-  var output = ':m ' + fixture + '\n';
+  var output = ':m ' + fixture;
 
-  gulp.src(fixture).pipe(stream).
-                    pipe(through2.obj(function(chunk, encoding, callback){
-    t.equal(output, chunk.toString());
-    callback();
-  }));
+  var promise = purescript.psci({src: fixture});
+
+  promise.then(function(){
+    fs.readFile('.psci', function(error, result){
+      if (error) t.fail(error);
+      else t.equal(result.toString(), output);
+    });
+  });
 });
 
 test('psc-make - basic', function(t){

@@ -1,20 +1,34 @@
 module GulpPurescript.FS
   ( FS()
   , Stream()
-  , createWriteStream
+  , writeFile
   ) where
 
+import Control.Monad.Aff (Aff(), makeAff)
 import Control.Monad.Eff (Eff())
+import Control.Monad.Eff.Exception (Error())
+
+import Data.Function
 
 foreign import data FS :: !
 
 data Stream i o
 
-foreign import createWriteStream """
-function createWriteStream(path) {
+writeFile :: forall eff. String -> String -> Aff (fs :: FS | eff) Unit
+writeFile filename contents = makeAff $ runFn4 writeFileFn filename contents
+
+foreign import writeFileFn """
+function writeFileFn(filename, contents, errback, callback) {
   return function(){
     var fs = require('fs');
-    return fs.createWriteStream(path);
+    fs.writeFile(filename, contents, function(error){
+      if (error) errback(new Error(error))();
+      else callback()();
+    });
   };
 }
-""" :: forall eff. String -> Eff (fs :: FS | eff) (Stream String Unit)
+""" :: forall eff. Fn4 String
+                       String
+                       (Error -> Eff (fs :: FS | eff) Unit)
+                       (Unit -> Eff (fs :: FS | eff) Unit)
+                       (Eff (fs :: FS | eff) Unit)
