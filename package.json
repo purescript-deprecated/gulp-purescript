@@ -35,10 +35,8 @@
     "gulp-util": "^3.0.4",
     "logalot": "^2.1.0",
     "minimist": "^1.1.1",
-    "multipipe": "^0.1.2",
     "promise": "^7.0.3",
     "resolve-bin": "^0.3.0",
-    "through2": "^0.6.3",
     "which": "^1.0.9"
   },
   "devDependencies": {
@@ -50,6 +48,7 @@
     "run-sequence": "^1.0.2",
     "tap-spec": "^2.2.2",
     "tape": "^3.5.0",
+    "through2": "^0.6.3",
     "webpack": "^1.8.9"
   }
 }

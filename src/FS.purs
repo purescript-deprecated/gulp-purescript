@@ -1,6 +1,5 @@
 module GulpPurescript.FS
   ( FS()
-  , Stream()
   , writeFile
   ) where
 
@@ -11,8 +10,6 @@ import Control.Monad.Eff.Exception (Error())
 import Data.Function
 
 foreign import data FS :: !
-
-data Stream i o
 
 writeFile :: forall eff. String -> String -> Aff (fs :: FS | eff) Unit
 writeFile filename contents = makeAff $ runFn4 writeFileFn filename contents

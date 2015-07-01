@@ -28,16 +28,15 @@ import GulpPurescript.Buffer (Buffer(), mkBufferFromString)
 import GulpPurescript.ChildProcess (ChildProcess(), spawn)
 import GulpPurescript.FS (FS(), writeFile)
 import GulpPurescript.Glob (Glob(), globAll)
-import GulpPurescript.GulpUtil (File(), fileIsNull, fileIsStream, filePath, mkFile, mkPluginError)
+import GulpPurescript.GulpUtil (File(), mkFile, mkPluginError)
 import GulpPurescript.Logalot (Logalot(), info)
 import GulpPurescript.Minimist (minimist)
-import GulpPurescript.Multipipe (multipipe2)
 import GulpPurescript.OS (OS(), Platform(Win32), platform)
 import GulpPurescript.Options (Psci(..), pscOptions, pscBundleOptions, pscDocsOptions)
 import GulpPurescript.Package (Pkg(), Package(..), package)
 import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin(), resolveBin)
-import GulpPurescript.Through2 (Through2(), objStream, accStream)
+import GulpPurescript.Stream (Stream(), ReadableStream(), mkReadableStreamFromBuffer)
 import GulpPurescript.Which (Which(), which)
 
 newtype Argv = Argv { verbose :: Boolean }
@@ -53,7 +52,7 @@ type Effects eff =
   , os :: OS
   , package :: Pkg
   , resolveBin :: ResolveBin
-  , through2 :: Through2
+  , stream :: Stream
   , which :: Which
   | eff
   )
@@ -120,24 +119,23 @@ psc opts eb cb = runAff eb cb $ do
     then liftEff $ info $ pscCommand ++ "\n" ++ output
     else pure unit
 
-pscBundle :: forall eff. Foreign -> Errorback eff -> Callback eff Unit -> Eff (Effects eff) Unit
-pscBundle opts eb cb = runAff eb cb $ do
-  output <- either (throwPluginError <<< show)
-                   (execute pscBundleCommand)
-                   (pscBundleOptions opts)
-  if isVerbose
-    then liftEff $ info $ pscCommand ++ "\n" ++ output
-    else pure unit
+pscBundle :: forall eff. Foreign -> Errorback eff -> Callback eff (ReadableStream Buffer) -> Eff (Effects eff) Unit
+pscBundle opts eb cb = runAff eb cb (either (throwPluginError <<< show) run (pscBundleOptions opts))
+  where
+    run :: [String] -> Aff (Effects eff) (ReadableStream Buffer)
+    run args = do
+      bundle <- execute pscBundleCommand args
+      liftEff (mkReadableStreamFromBuffer (mkBufferFromString bundle))
 
 pscDocs :: forall eff. Foreign -> Errorback eff -> Callback eff File -> Eff (Effects eff) Unit
-pscDocs opts eb cb = runAff eb cb $ do
-  case pscDocsOptions opts of
-       Left e  -> throwPluginError (show e)
-       Right a -> mkFile "." <$> mkBufferFromString
-                             <$> execute pscDocsCommand a
+pscDocs opts eb cb = runAff eb cb (either (throwPluginError <<< show) run (pscDocsOptions opts))
+  where
+    run :: [String] -> Aff (Effects eff) File
+    run args = mkFile "." <$> mkBufferFromString
+                          <$> execute pscDocsCommand args
 
 psci :: forall eff. Foreign -> Errorback eff -> Callback eff Unit -> Eff (Effects eff) Unit
-psci opts eb cb = runAff eb cb (either (\e -> throwPluginError (show e)) write (read opts))
+psci opts eb cb = runAff eb cb (either (throwPluginError <<< show) write (read opts))
   where
     write :: Psci -> Aff (Effects eff) Unit
     write (Psci a) = do
