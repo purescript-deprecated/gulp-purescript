@@ -96,6 +96,10 @@ Toggles `--main` or sets `--main=<string>` that generates code to run the `main`
 
 Sets `--browser-namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
 
+###### `requirePath` (String)
+
+Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript.
+
 ### `purescript.pscDocs(options)`
 
 Invokes the `psc-docs` command. The following options are supported.

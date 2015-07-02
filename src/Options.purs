@@ -24,11 +24,11 @@ srcKey = "src"
 
 noOptsOpt = "no-opts"
 
-noOptsKey = "noOpts"
+noOptsKey = camelcase noOptsOpt
 
 noMagicDoOpt = "no-magic-do"
 
-noMagicDoKey = "noMagicDo"
+noMagicDoKey = camelcase noMagicDoOpt
 
 noTcoOpt = "no-tco"
 
@@ -36,7 +36,7 @@ noTcoKey = "noTco"
 
 verboseErrorsOpt = "verbose-errors"
 
-verboseErrorsKey = "verboseErrors"
+verboseErrorsKey = camelcase verboseErrorsOpt
 
 outputOpt = "output"
 
@@ -44,7 +44,7 @@ outputKey = outputOpt
 
 browserNamespaceOpt = "browser-namespace"
 
-browserNamespaceKey = "browserNamespace"
+browserNamespaceKey = camelcase browserNamespaceOpt
 
 commentsOpt = "comments"
 
@@ -52,7 +52,7 @@ commentsKey = commentsOpt
 
 noPrefixOpt = "no-prefix"
 
-noPrefixKey = "noPrefix"
+noPrefixKey = camelcase noPrefixOpt
 
 mainOpt = "main"
 
@@ -74,6 +74,10 @@ docgenOpt = "docgen"
 
 docgenKey = docgenOpt
 
+requirePathOpt = "require-path"
+
+requirePathKey = camelcase requirePathOpt
+
 newtype Psc
   = Psc { src :: Either String [String]
         , ffi :: NullOrUndefined (Either String [String])
@@ -84,6 +88,7 @@ newtype Psc
         , verboseErrors :: NullOrUndefined Boolean
         , comments :: NullOrUndefined Boolean
         , noPrefix :: NullOrUndefined Boolean
+        , requirePath :: NullOrUndefined String
         }
 
 newtype PscBundle
@@ -126,6 +131,7 @@ instance isForeignPsc :: IsForeign Psc where
              , verboseErrors: _
              , comments: _
              , noPrefix: _
+             , requirePath: _
              } <$> readProp srcKey obj
                <*> readProp ffiKey obj
                <*> readProp outputKey obj
@@ -134,7 +140,8 @@ instance isForeignPsc :: IsForeign Psc where
                <*> readProp noOptsKey obj
                <*> readProp verboseErrorsKey obj
                <*> readProp commentsKey obj
-               <*> readProp noPrefixKey obj)
+               <*> readProp noPrefixKey obj
+               <*> readProp requirePathKey obj)
 
 instance isForeignPscBundle :: IsForeign PscBundle where
   read obj =
@@ -238,7 +245,8 @@ pscOptions opts = fold <$> parsed
                        opt noOptsOpt a.noOpts <>
                        opt verboseErrorsOpt a.verboseErrors <>
                        opt commentsOpt a.comments <>
-                       opt noPrefixOpt a.noPrefix
+                       opt noPrefixOpt a.noPrefix <>
+                       opt requirePathOpt a.requirePath
 
 pscBundleOptions :: Foreign -> Either ForeignError [String]
 pscBundleOptions opts = fold <$> parsed
@@ -256,12 +264,12 @@ pscDocsOptions opts = fold <$> parsed
                            opt formatOpt a.format <>
                            opt docgenOpt a.docgen
 
-foreign import expandGlob
-  """
-  var expandGlob = (function () {
-    var glob = require("glob");
-    return function (pattern) {
-      return glob.sync(pattern);
-    };
-  }());
-  """ :: String -> [String]
+foreign import expandGlob """
+function expandGlob() {
+  var glob = require("glob");
+  return function(pattern) {
+    return glob.sync(pattern);
+  };
+}""" :: String -> [String]
+
+foreign import camelcase "function camelcase(a){return require('camelcase')(a);}" :: String -> String
