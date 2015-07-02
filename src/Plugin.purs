@@ -1,37 +1,41 @@
 module GulpPurescript.Plugin
   ( Effects()
+  , Errorback()
+  , Callback()
   , psc
   , pscBundle
   , pscDocs
-  , dotPsci
+  , psci
   ) where
 
-import Control.Monad.Aff (Aff(), runAff)
+import Control.Monad.Aff (Aff())
 import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (Error())
 import Control.Monad.Error.Class (catchError, throwError)
 
+import Data.Array (concat)
 import Data.Either (Either(..), either)
 import Data.Foreign (Foreign())
 import Data.Foreign.Class (IsForeign, read, readProp)
+import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 import Data.Maybe (Maybe(Just), maybe, fromMaybe)
+import Data.String (joinWith)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested (tuple2)
 
 import GulpPurescript.Buffer (Buffer(), mkBufferFromString)
 import GulpPurescript.ChildProcess (ChildProcess(), spawn)
-import GulpPurescript.FS (FS(), Stream(), createWriteStream)
-import GulpPurescript.GulpUtil (File(), fileIsNull, fileIsStream, filePath, mkFile, mkPluginError)
+import GulpPurescript.Glob (Glob(), globAll)
+import GulpPurescript.GulpUtil (File(), mkFile, mkPluginError)
 import GulpPurescript.Logalot (Logalot(), info)
 import GulpPurescript.Minimist (minimist)
-import GulpPurescript.Multipipe (multipipe2)
 import GulpPurescript.OS (OS(), Platform(Win32), platform)
-import GulpPurescript.Options (pscOptions, pscBundleOptions, pscDocsOptions)
+import GulpPurescript.Options (Psci(..), pscOptions, pscBundleOptions, pscDocsOptions)
 import GulpPurescript.Package (Pkg(), Package(..), package)
 import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin(), resolveBin)
-import GulpPurescript.Through2 (Through2(), objStream, accStream)
+import GulpPurescript.Stream (Stream(), ReadableStream(), mkReadableStreamFromAff)
 import GulpPurescript.Which (Which(), which)
 
 newtype Argv = Argv { verbose :: Boolean }
@@ -41,15 +45,19 @@ instance isForeignArgv :: IsForeign Argv where
 
 type Effects eff =
   ( cp :: ChildProcess
-  , fs :: FS
+  , glob :: Glob
   , logalot :: Logalot
   , os :: OS
   , package :: Pkg
   , resolveBin :: ResolveBin
-  , through2 :: Through2
+  , stream :: Stream
   , which :: Which
   | eff
   )
+
+type Errorback eff = Error -> Eff (Effects eff) Unit
+
+type Callback eff a = a -> Eff (Effects eff) Unit
 
 nodeCommand = "node"
 
@@ -57,7 +65,7 @@ pursPackage = "purescript"
 
 psciFilename = ".psci"
 
-psciLoadCommand = ":m"
+psciLoadModuleCommand = ":m"
 
 psciLoadForeignCommand = ":f"
 
@@ -100,8 +108,8 @@ execute cmd args = do
   result <- spawn cmd' args'
   return result
 
-psc :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
-psc opts eb cb = runAff eb cb $ do
+psc :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
+psc opts = mkReadableStreamFromAff $ do
   output <- either (throwPluginError <<< show)
                    (execute pscCommand)
                    (pscOptions opts)
@@ -109,24 +117,35 @@ psc opts eb cb = runAff eb cb $ do
     then liftEff $ info $ pscCommand ++ "\n" ++ output
     else pure unit
 
-pscBundle :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
-pscBundle opts eb cb = runAff eb cb $ do
-  output <- either (throwPluginError <<< show)
-                   (execute pscBundleCommand)
-                   (pscBundleOptions opts)
-  if isVerbose
-    then liftEff $ info $ pscCommand ++ "\n" ++ output
-    else pure unit
+pscBundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+pscBundle opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscBundleOptions opts))
+  where
+    run :: [String] -> Aff (Effects eff) File
+    run args = mkFile "." <$> mkBufferFromString
+                          <$> execute pscBundleCommand args
 
-pscDocs :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (File -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
-pscDocs opts eb cb = runAff eb cb $ do
-  case pscDocsOptions opts of
-       Left e  -> throwPluginError (show e)
-       Right a -> mkFile "." <$> mkBufferFromString
-                             <$> execute pscDocsCommand a
+pscDocs :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+pscDocs opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscDocsOptions opts))
+  where
+    run :: [String] -> Aff (Effects eff) File
+    run args = mkFile "." <$> mkBufferFromString
+                          <$> execute pscDocsCommand args
 
-dotPsci :: forall eff. Eff (Effects eff) (Stream File Unit)
-dotPsci = multipipe2 <$> objStream run <*> createWriteStream psciFilename
-  where run i = if fileIsStream i
-                   then throwPluginError "Streaming is not supported"
-                   else pure $ psciLoadCommand ++ " " ++ relative cwd (filePath i) ++ "\n"
+psci :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+psci opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (read opts))
+  where
+    run :: Psci -> Aff (Effects eff) File
+    run (Psci a) = do
+      srcs <- globAll (either pure id a.src)
+      ffis <- globAll (either pure id (fromMaybe (Right []) (runNullOrUndefined a.ffi)))
+
+      let lines = (loadModule <$> concat srcs) <> (loadForeign <$> concat ffis)
+          buffer = mkBufferFromString (joinWith "\n" lines)
+
+      return (mkFile psciFilename buffer)
+
+    loadModule :: String -> String
+    loadModule a = psciLoadModuleCommand ++ " " ++ relative cwd a
+
+    loadForeign :: String -> String
+    loadForeign a = psciLoadForeignCommand ++ " " ++ relative cwd a

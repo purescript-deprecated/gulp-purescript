@@ -1,5 +1,6 @@
 module GulpPurescript.Options
-  ( pscOptions
+  ( Psci(..)
+  , pscOptions
   , pscBundleOptions
   , pscDocsOptions
   ) where
@@ -99,10 +100,10 @@ newtype PscDocs
             , docgen :: NullOrUndefined Docgen
             }
 
-newtype DotPsci
-  = DotPsci { src :: Either String PathArray
-            , ffi :: NullOrUndefined (Either String PathArray)
-            }
+newtype Psci
+  = Psci { src :: Either String [String]
+         , ffi :: NullOrUndefined (Either String [String])
+         }
 
 newtype Docgen = Docgen Foreign
 
@@ -157,12 +158,12 @@ instance isForeignPscDocs :: IsForeign PscDocs where
                    <*> readProp formatKey obj
                    <*> readProp docgenOpt obj)
 
-instance isForeignDotPsci :: IsForeign DotPsci where
+instance isForeignPsci :: IsForeign Psci where
   read obj =
-    DotPsci <$> ({ src: _
-                 , ffi: _
-                 } <$> readProp srcKey obj
-                   <*> readProp ffiKey obj)
+    Psci <$> ({ src: _
+              , ffi: _
+              } <$> readProp srcKey obj
+                <*> readProp ffiKey obj)
 
 instance isForeignPathArray :: IsForeign PathArray where
   read val = PathArray <$> read val

@@ -140,6 +140,47 @@ multipipe2 :: forall a b c. Stream a b -> Stream b c -> Stream a c
 
 
 
+## Module GulpPurescript.OS
+
+#### `OS`
+
+``` purescript
+data OS :: !
+```
+
+
+#### `Platform`
+
+``` purescript
+data Platform
+  = Darwin 
+  | Linux 
+  | Win32 
+```
+
+
+#### `showPlatform`
+
+``` purescript
+instance showPlatform :: Show Platform
+```
+
+
+#### `isForeignPlatform`
+
+``` purescript
+instance isForeignPlatform :: IsForeign Platform
+```
+
+
+#### `platform`
+
+``` purescript
+platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
+```
+
+
+
 ## Module GulpPurescript.Options
 
 #### `isForeignEither`
@@ -269,47 +310,6 @@ pscDocsOptions :: Foreign -> Either ForeignError [String]
 
 
 
-## Module GulpPurescript.OS
-
-#### `OS`
-
-``` purescript
-data OS :: !
-```
-
-
-#### `Platform`
-
-``` purescript
-data Platform
-  = Darwin 
-  | Linux 
-  | Win32 
-```
-
-
-#### `showPlatform`
-
-``` purescript
-instance showPlatform :: Show Platform
-```
-
-
-#### `isForeignPlatform`
-
-``` purescript
-instance isForeignPlatform :: IsForeign Platform
-```
-
-
-#### `platform`
-
-``` purescript
-platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
-```
-
-
-
 ## Module GulpPurescript.Package
 
 #### `Pkg`
@@ -389,10 +389,10 @@ pscDocs :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (File -> 
 ```
 
 
-#### `dotPsci`
+#### `psci`
 
 ``` purescript
-dotPsci :: forall eff. Eff (Effects eff) (Stream File Unit)
+psci :: forall eff. Eff (Effects eff) (Stream File Unit)
 ```
 
 
