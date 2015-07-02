@@ -15,84 +15,6 @@ var rewire = require('rewire');
 var purescript = require('./');
 
 test('psc - basic', function(t){
-  t.plan(2);
-
-  var stream = purescript.psc({noPrelude: true});
-
-  var fixture = 'Fixture1.purs';
-
-  gulp.src(fixture).pipe(stream).
-                    pipe(through2.obj(function(chunk, encoding, callback){
-    t.ok(/Fixture/.test(chunk.contents.toString()), 'should have a compiled result');
-    t.equal('psc.js', chunk.path);
-    callback();
-  }));
-});
-
-test('psc - output option', function(t){
-  t.plan(2);
-
-  var fixture = 'Fixture1.purs';
-
-  var output  = 'output.js';
-
-  var stream  = purescript.psc({noPrelude: true, output: output});
-
-  gulp.src(fixture).pipe(stream).
-                    pipe(through2.obj(function(chunk, encoding, callback){
-    t.ok(!fs.existsSync(__dirname + '/' + output), 'output file should not exist');
-    t.equal(output, chunk.path);
-    callback();
-  }));
-});
-
-test('psc - failure', function(t){
-  t.plan(2);
-
-  var stream = purescript.psc({noPrelude: true});
-
-  var fixture = 'Fixture2.purs';
-
-  gulp.src(fixture).pipe(stream).
-                    on('error', function(e){
-    t.ok(/"where"/.test(e.message), 'should have a failure message');
-    t.equal('Error', e.name);
-  });
-});
-
-test('psc - invalid option type', function(t){
-  t.plan(2);
-
-  var fixture = 'Fixture1.purs';
-
-  var moduleName = path.basename(fixture, '.purs');
-
-  var stream  = purescript.psc({noPrelude: true, module: moduleName});
-
-  gulp.src(fixture).pipe(stream).
-                    on('error', function(e){
-    t.ok(/type mismatch/i.test(e.message), 'should have a failure message');
-    t.equal('Error', e.name);
-  });
-});
-
-test('psci - basic', function(t){
-  t.plan(1);
-
-  var stream = purescript.dotPsci();
-
-  var fixture = 'Fixture1.purs';
-
-  var output = ':m ' + fixture + '\n';
-
-  gulp.src(fixture).pipe(stream).
-                    pipe(through2.obj(function(chunk, encoding, callback){
-    t.equal(output, chunk.toString());
-    callback();
-  }));
-});
-
-test('psc-make - basic', function(t){
   t.plan(1);
 
   var purescript = rewire('./');
@@ -105,40 +27,71 @@ test('psc-make - basic', function(t){
 
   purescript.__set__('logalot', mock);
 
-  var stream = purescript.pscMake({noPrelude: true});
-
   var fixture = 'Fixture1.purs';
 
-  gulp.src(fixture).pipe(stream).
-                    on('finish', function(){
+  var stream = purescript.psc({src: fixture});
+
+  stream.pipe(through2.obj(function(chunk, encoding, callback){
     t.pass('should output a compiled result');
-  });
+    callback();
+  }));
 });
 
-test('psc-make - error', function(t){
+test('psc - error', function(t){
   t.plan(2);
-
-  var stream = purescript.pscMake({noPrelude: true});
 
   var fixture = 'Fixture2.purs';
 
-  gulp.src(fixture).pipe(stream).
-                    on('error', function(e){
+  var stream = purescript.psc({src: fixture});
+
+  stream.on('error', function(e){
     t.ok(/"where"/.test(e.message), 'should have a failure message');
     t.equal('Error', e.name);
   });
 });
 
-test('psc-make - invalid option type', function(t){
+test('psc - invalid option type', function(t){
   t.plan(2);
 
-  var stream = purescript.pscMake({noPrelude: 'invalid'});
+  try {
+    var stream = purescript.psc({src: 10});
+
+    stream.on('error', function(e){
+      t.ok(/type mismatch/i.test(error.message), 'should have a failure message');
+      t.equal('Error', error.name);
+    });
+  }
+  catch (error) {
+    t.ok(/type mismatch/i.test(error.message), 'should have a failure message');
+    t.equal('Error', error.name);
+  }
+});
+
+test('psc-bundle - basic', function(t){
+  t.plan(1);
+
+  var fixture = 'foreign.js';
+
+  var stream = purescript.pscBundle({src: fixture});
+
+  stream.pipe(through2.obj(function(chunk, encoding, callback){
+    t.ok(/psc-bundle/.test(chunk.contents.toString()), 'should have a compiled result');
+    callback();
+  }));
+});
+
+test('psci - basic', function(t){
+  t.plan(2);
 
   var fixture = 'Fixture1.purs';
 
-  gulp.src(fixture).pipe(stream).
-                    on('error', function(e){
-    t.ok(/type mismatch/i.test(e.message), 'should have a failure message');
-    t.equal('Error', e.name);
-  });
+  var output = ':m ' + fixture;
+
+  var stream = purescript.psci({src: fixture});
+
+  stream.pipe(through2.obj(function(chunk, encoding, callback){
+    t.equal('.psci', chunk.path);
+    t.equal(output, chunk.contents.toString());
+    callback();
+  }));
 });

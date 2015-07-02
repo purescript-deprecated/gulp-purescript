@@ -3,29 +3,25 @@
 var gulpPurescript = require('GulpPurescript.Plugin');
 
 function psc(options) {
-  var result = gulpPurescript.psc(options);
-  return result();
+  return gulpPurescript.psc(options)();
 }
 
-function pscMake(options) {
-  var result = gulpPurescript.pscMake(options);
-  return result();
+function pscBundle(options) {
+  return gulpPurescript.pscBundle(options)();
 }
 
 function pscDocs(options) {
-  var result = gulpPurescript.pscDocs(options);
-  return result();
+  return gulpPurescript.pscDocs(options)();
 }
 
-function dotPsci() {
-  var result = gulpPurescript.dotPsci();
-  return result;
+function psci(options) {
+  return gulpPurescript.psci(options)();
 }
 
 module.exports.psc = psc;
 
-module.exports.pscMake = pscMake;
+module.exports.pscBundle = pscBundle;
 
 module.exports.pscDocs = pscDocs;
 
-module.exports.dotPsci = dotPsci;
+module.exports.psci = psci;

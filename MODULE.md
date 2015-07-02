@@ -140,72 +140,6 @@ multipipe2 :: forall a b c. Stream a b -> Stream b c -> Stream a c
 
 
 
-## Module GulpPurescript.Options
-
-#### `isForeignEither`
-
-``` purescript
-instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b)
-```
-
-
-#### `isForeignPsc`
-
-``` purescript
-instance isForeignPsc :: IsForeign Psc
-```
-
-
-#### `isForeignPscMake`
-
-``` purescript
-instance isForeignPscMake :: IsForeign PscMake
-```
-
-
-#### `isForeignPscDocs`
-
-``` purescript
-instance isForeignPscDocs :: IsForeign PscDocs
-```
-
-
-#### `isForeignFormat`
-
-``` purescript
-instance isForeignFormat :: IsForeign Format
-```
-
-
-#### `pscOptions`
-
-``` purescript
-pscOptions :: Foreign -> [String]
-```
-
-
-#### `pscOptionsNoOutput`
-
-``` purescript
-pscOptionsNoOutput :: Foreign -> Tuple (Maybe String) [String]
-```
-
-
-#### `pscMakeOptions`
-
-``` purescript
-pscMakeOptions :: Foreign -> [String]
-```
-
-
-#### `pscDocsOptions`
-
-``` purescript
-pscDocsOptions :: Foreign -> [String]
-```
-
-
-
 ## Module GulpPurescript.OS
 
 #### `OS`
@@ -243,6 +177,135 @@ instance isForeignPlatform :: IsForeign Platform
 
 ``` purescript
 platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
+```
+
+
+
+## Module GulpPurescript.Options
+
+#### `isForeignEither`
+
+``` purescript
+instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b)
+```
+
+
+#### `isForeignPsc`
+
+``` purescript
+instance isForeignPsc :: IsForeign Psc
+```
+
+
+#### `isForeignPscBundle`
+
+``` purescript
+instance isForeignPscBundle :: IsForeign PscBundle
+```
+
+
+#### `isForeignPscDocs`
+
+``` purescript
+instance isForeignPscDocs :: IsForeign PscDocs
+```
+
+
+#### `isForeignDotPsci`
+
+``` purescript
+instance isForeignDotPsci :: IsForeign DotPsci
+```
+
+
+#### `isForeignPathArray`
+
+``` purescript
+instance isForeignPathArray :: IsForeign PathArray
+```
+
+
+#### `isForeignDocgen`
+
+``` purescript
+instance isForeignDocgen :: IsForeign Docgen
+```
+
+
+#### `isForeignFormat`
+
+``` purescript
+instance isForeignFormat :: IsForeign Format
+```
+
+
+#### `commandLineOptionBoolean`
+
+``` purescript
+instance commandLineOptionBoolean :: CommandLineOption Boolean
+```
+
+
+#### `commandLineOptionString`
+
+``` purescript
+instance commandLineOptionString :: CommandLineOption String
+```
+
+
+#### `commandLineOptionEither`
+
+``` purescript
+instance commandLineOptionEither :: (CommandLineOption a, CommandLineOption b) => CommandLineOption (Either a b)
+```
+
+
+#### `commandLineOptionArray`
+
+``` purescript
+instance commandLineOptionArray :: (CommandLineOption a) => CommandLineOption [a]
+```
+
+
+#### `commandLineOptionPathArray`
+
+``` purescript
+instance commandLineOptionPathArray :: CommandLineOption PathArray
+```
+
+
+#### `commandLineOptionDocgen`
+
+``` purescript
+instance commandLineOptionDocgen :: CommandLineOption Docgen
+```
+
+
+#### `commandLineOptionFormat`
+
+``` purescript
+instance commandLineOptionFormat :: CommandLineOption Format
+```
+
+
+#### `pscOptions`
+
+``` purescript
+pscOptions :: Foreign -> Either ForeignError [String]
+```
+
+
+#### `pscBundleOptions`
+
+``` purescript
+pscBundleOptions :: Foreign -> Either ForeignError [String]
+```
+
+
+#### `pscDocsOptions`
+
+``` purescript
+pscDocsOptions :: Foreign -> Either ForeignError [String]
 ```
 
 
@@ -308,28 +371,28 @@ type Effects eff = (which :: Which, through2 :: Through2, resolveBin :: ResolveB
 #### `psc`
 
 ``` purescript
-psc :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
+psc :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
 ```
 
 
-#### `pscMake`
+#### `pscBundle`
 
 ``` purescript
-pscMake :: forall eff. Foreign -> Eff (Effects eff) (Stream File Unit)
+pscBundle :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
 ```
 
 
 #### `pscDocs`
 
 ``` purescript
-pscDocs :: forall eff. Foreign -> Eff (Effects eff) (Stream File File)
+pscDocs :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (File -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
 ```
 
 
-#### `dotPsci`
+#### `psci`
 
 ``` purescript
-dotPsci :: forall eff. Eff (Effects eff) (Stream File Unit)
+psci :: forall eff. Eff (Effects eff) (Stream File Unit)
 ```
 
 

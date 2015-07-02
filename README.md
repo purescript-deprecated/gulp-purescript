@@ -21,10 +21,10 @@ var gulp = require('gulp');
 
 var purescript = require('gulp-purescript');
 
-gulp.task('purescript', function(){
-  return gulp.src('src/**/*.purs').
-         pipe(purescript.psc({noPrelude: true})).
-         pipe(gulp.dest('build'));
+gulp.task('psc', function(){
+  return purescript.psc({
+    src: 'src/*.purs'
+  });
 });
 ```
 
@@ -36,69 +36,13 @@ Refer to the PureScript [compiler usage](https://github.com/purescript/purescrip
 
 Invokes the `psc` command. The following options are supported.
 
-###### `noPrelude` (Boolean)
+###### `src` (String or String Array)
 
-Toggles `--no-prelude` that omits the Prelude.
+Files to compile. Glob syntax is supported.
 
-###### `noTco` (Boolean)
+###### `ffi` (String or String Array)
 
-Toggles `--no-tco` that disables tail-call optimizations.
-
-###### `noMagicDo` (Boolean)
-
-Toggles `--no-magic-do` that disables optimizations overloading the do keyword generating efficient code for the `Eff` monad.
-
-###### `main` (Boolean or String)
-
-Toggles `--main` or sets `--main=<string>` that generates code to run the `main` function in the specified module or the `Main` module by default.
-
-###### `noOpts` (Boolean)
-
-Toggles `--no-opts` that skips the optimization phase.
-
-###### `verboseErrors` (Boolean)
-
-Toggles `--verbose-errors` that displays verbose error messages.
-
-###### `comments` (Boolean)
-
-Toggles `--comments` that includes comments in generated code.
-
-###### `browserNamespace` (String)
-
-Sets `--browser-namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
-
-###### `externs` (String)
-
-Sets `--externs=<string>` that specifies the externs file.
-
-###### `module` (String Array)
-
-Sets one or more `--module=<string>` that enables dead code elimination, removing all code without a transitive dependency of one of the specified modules.
-
-###### `codegen` (String Array)
-
-Sets one or more `--codegen=<string>` that generates code and externs for the specified modules.
-
-###### `output` (String)
-
-Sets the path value of the [File](https://github.com/wearefractal/vinyl) passed through the Gulp stream. Note that this will not set `--output=<string>`.
-
-###### `noPrefix` (Boolean)
-
-Toggles `--no-prefix` that does not include the comment header.
-
-###### `ffi` (String Array)
-
-Sets one or more `--ffi=<string>` that specifies the files for code that is included with a `foreign import` in the PureScript source.
-
-### `purescript.pscMake(options)`
-
-Invokes the `psc-make` command. The following options are supported.
-
-###### `noPrelude` (Boolean)
-
-Toggles `--no-prelude` that omits the Prelude.
+Files for code that is included with a `foreign import` in the PureScript source. Glob syntax is supported.
 
 ###### `noTco` (Boolean)
 
@@ -128,13 +72,37 @@ Sets `--output=<string>` the specifies the output directory, `output` by default
 
 Toggles `--no-prefix` that does not include the comment header.
 
-###### `ffi` (String Array)
+### `purescript.pscBundle(options)`
 
-Sets one or more `--ffi=<string>` that specifies files for code that is included with a `foreign import` in the PureScript source.
+Invokes the `psc-bundle` command. The following options are supported.
+
+###### `src` (String or String Array)
+
+The `psc`-produced JavaScript source files to bundle. Glob syntax is supported.
+
+###### `output` (String)
+
+Sets `--output=<string>` that specifies the output filename for the bundle.
+
+###### `module` (String or String Array)
+
+The name of the module or modules to use as entry points for dead code elimination.
+
+###### `main` (Boolean or String)
+
+Toggles `--main` or sets `--main=<string>` that generates code to run the `main` function in the specified module or the `Main` module by default.
+
+###### `browserNamespace` (String)
+
+Sets `--browser-namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
 
 ### `purescript.pscDocs(options)`
 
-Invokes the `pscDocs` command. The following options are supported.
+Invokes the `psc-docs` command. The following options are supported.
+
+###### `src` (String or String Array)
+
+Files to be used for generating the documentation. Glob syntax is supported.
 
 ###### `format` (markdown | etags | ctags)
 
@@ -146,11 +114,19 @@ Sets `--docgen=...` that can be used to filter the modules documentation is gene
 
 - If a string value is provided, the documentation for that single module will be generated.
 - If a list of strings is provided, the documentation for all listed modules will be generated.
-- If an object with module name/filename pairs (for example, `{ Module: "docs/Module.md" }`) is provided, files will be written for each of the modules. In this mode, the task requires no `dest` as no value is returned.
+- If an object with module name/filename pairs (for example, `{ Module: 'docs/Module.md' }`) is provided, files will be written for each of the modules. In this mode, the task requires no `dest` as no value is returned.
 
-### `purescript.dotPsci()`
+### `purescript.psci(options)`
 
-Generates a `.psci` file in the current directory. Each source file is added with the `:m` command.
+Generates a `.psci` file.
+
+###### `src` (String or String Array)
+
+Files added to the `.psci` file with the `:m` command. Glob syntax is supported.
+
+###### `ffi` (String or String Array)
+
+Files added to the `.psci` file with the `:f` command. Glob syntax is supported.
 
 ## Command line arguments
 
