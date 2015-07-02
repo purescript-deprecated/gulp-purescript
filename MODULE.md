@@ -34,26 +34,26 @@ spawn :: forall eff. String -> [String] -> Aff (cp :: ChildProcess | eff) String
 
 
 
-## Module GulpPurescript.FS
+## Module GulpPurescript.Glob
 
-#### `FS`
+#### `Glob`
 
 ``` purescript
-data FS :: !
+data Glob :: !
 ```
 
 
-#### `Stream`
+#### `glob`
 
 ``` purescript
-data Stream i o
+glob :: forall eff. String -> Aff (glob :: Glob | eff) [String]
 ```
 
 
-#### `createWriteStream`
+#### `globAll`
 
 ``` purescript
-createWriteStream :: forall eff. String -> Eff (fs :: FS | eff) (Stream String Unit)
+globAll :: forall eff. [String] -> Aff (glob :: Glob | eff) [[String]]
 ```
 
 
@@ -81,27 +81,6 @@ mkFile :: String -> Buffer -> File
 ```
 
 
-#### `filePath`
-
-``` purescript
-filePath :: File -> String
-```
-
-
-#### `fileIsNull`
-
-``` purescript
-fileIsNull :: File -> Boolean
-```
-
-
-#### `fileIsStream`
-
-``` purescript
-fileIsStream :: File -> Boolean
-```
-
-
 
 ## Module GulpPurescript.Logalot
 
@@ -126,16 +105,6 @@ info :: forall eff. String -> Eff (logalot :: Logalot | eff) Unit
 
 ``` purescript
 minimist :: forall a. (IsForeign a) => [String] -> Maybe a
-```
-
-
-
-## Module GulpPurescript.Multipipe
-
-#### `multipipe2`
-
-``` purescript
-multipipe2 :: forall a b c. Stream a b -> Stream b c -> Stream a c
 ```
 
 
@@ -183,6 +152,14 @@ platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
 
 ## Module GulpPurescript.Options
 
+#### `Psci`
+
+``` purescript
+newtype Psci
+  = Psci { ffi :: NullOrUndefined (Either String [String]), src :: Either String [String] }
+```
+
+
 #### `isForeignEither`
 
 ``` purescript
@@ -211,10 +188,10 @@ instance isForeignPscDocs :: IsForeign PscDocs
 ```
 
 
-#### `isForeignDotPsci`
+#### `isForeignPsci`
 
 ``` purescript
-instance isForeignDotPsci :: IsForeign DotPsci
+instance isForeignPsci :: IsForeign Psci
 ```
 
 
@@ -364,35 +341,49 @@ instance isForeignArgv :: IsForeign Argv
 #### `Effects`
 
 ``` purescript
-type Effects eff = (which :: Which, through2 :: Through2, resolveBin :: ResolveBin, package :: Pkg, os :: OS, logalot :: Logalot, fs :: FS, cp :: ChildProcess | eff)
+type Effects eff = (which :: Which, stream :: Stream, resolveBin :: ResolveBin, package :: Pkg, os :: OS, logalot :: Logalot, glob :: Glob, cp :: ChildProcess | eff)
+```
+
+
+#### `Errorback`
+
+``` purescript
+type Errorback eff = Error -> Eff (Effects eff) Unit
+```
+
+
+#### `Callback`
+
+``` purescript
+type Callback eff a = a -> Eff (Effects eff) Unit
 ```
 
 
 #### `psc`
 
 ``` purescript
-psc :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
+psc :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
 ```
 
 
 #### `pscBundle`
 
 ``` purescript
-pscBundle :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (Unit -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
+pscBundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
 ```
 
 
 #### `pscDocs`
 
 ``` purescript
-pscDocs :: forall eff. Foreign -> (Error -> Eff (Effects eff) Unit) -> (File -> Eff (Effects eff) Unit) -> Eff (Effects eff) Unit
+pscDocs :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
 ```
 
 
 #### `psci`
 
 ``` purescript
-psci :: forall eff. Eff (Effects eff) (Stream File Unit)
+psci :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
 ```
 
 
@@ -421,33 +412,26 @@ resolveBin :: forall eff. String -> Options -> Aff (resolveBin :: ResolveBin | e
 
 
 
-## Module GulpPurescript.Through2
+## Module GulpPurescript.Stream
 
-#### `Through2`
+#### `Stream`
 
 ``` purescript
-data Through2 :: !
+data Stream :: !
 ```
 
 
-#### `RunAff`
+#### `ReadableStream`
 
 ``` purescript
-type RunAff eff a = (Error -> Eff eff Unit) -> (a -> Eff eff Unit) -> Aff eff a -> Eff eff Unit
+data ReadableStream out
 ```
 
 
-#### `objStream`
+#### `mkReadableStreamFromAff`
 
 ``` purescript
-objStream :: forall eff1 eff2 input output. (input -> Aff eff1 output) -> Eff (through2 :: Through2 | eff2) (Stream input output)
-```
-
-
-#### `accStream`
-
-``` purescript
-accStream :: forall eff1 eff2 input output. (input -> Aff eff1 output) -> Eff (through2 :: Through2 | eff2) (Stream input [output])
+mkReadableStreamFromAff :: forall eff1 eff2 out. Aff eff1 out -> Eff (stream :: Stream | eff2) (ReadableStream out)
 ```
 
 
