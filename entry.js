@@ -2,38 +2,20 @@
 
 var gulpPurescript = require('GulpPurescript.Plugin');
 
-var Promise = require('promise');
-
-function promisify(aff) {
-  return new Promise(function(resolve, reject){
-    var errback = function(error){
-      return function(){
-        reject(error);
-      };
-    };
-    var callback = function(result){
-      return function(){
-        resolve(result);
-      };
-    };
-    aff(errback)(callback)();
-  });
-}
-
 function psc(options) {
-  return promisify(gulpPurescript.psc(options));
+  return gulpPurescript.psc(options)();
 }
 
 function pscBundle(options) {
-  return promisify(gulpPurescript.pscBundle(options));
+  return gulpPurescript.pscBundle(options)();
 }
 
 function pscDocs(options) {
-  return promisify(gulpPurescript.pscDocs(options));
+  return gulpPurescript.pscDocs(options)();
 }
 
 function psci(options) {
-  return promisify(gulpPurescript.psci(options));
+  return gulpPurescript.psci(options)();
 }
 
 module.exports.psc = psc;

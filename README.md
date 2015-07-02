@@ -21,10 +21,10 @@ var gulp = require('gulp');
 
 var purescript = require('gulp-purescript');
 
-gulp.task('purescript', function(){
-  return gulp.src('src/**/*.purs').
-         pipe(purescript.psc({noPrelude: true})).
-         pipe(gulp.dest('build'));
+gulp.task('psc', function(){
+  return purescript.psc({
+    src: 'src/*.purs'
+  });
 });
 ```
 
@@ -38,11 +38,11 @@ Invokes the `psc` command. The following options are supported.
 
 ###### `src` (String or String Array)
 
-The location of the source files to compile. Glob syntax is supported.
+Files to compile. Glob syntax is supported.
 
 ###### `ffi` (String or String Array)
 
-Sets one or more `--ffi=<string>` that specifies files for code that is included with a `foreign import` in the PureScript source.
+Files for code that is included with a `foreign import` in the PureScript source. Glob syntax is supported.
 
 ###### `noTco` (Boolean)
 
@@ -78,7 +78,7 @@ Invokes the `psc-bundle` command. The following options are supported.
 
 ###### `src` (String or String Array)
 
-The location of the `psc`-produced javascript source files to bundle. Glob syntax is supported.
+The `psc`-produced JavaScript source files to bundle. Glob syntax is supported.
 
 ###### `output` (String)
 
@@ -98,7 +98,11 @@ Sets `--browser-namespace=<string>` that specifies the namespace that PureScript
 
 ### `purescript.pscDocs(options)`
 
-Invokes the `pscDocs` command. The following options are supported.
+Invokes the `psc-docs` command. The following options are supported.
+
+###### `src` (String or String Array)
+
+Files to be used for generating the documentation. Glob syntax is supported.
 
 ###### `format` (markdown | etags | ctags)
 
@@ -110,11 +114,19 @@ Sets `--docgen=...` that can be used to filter the modules documentation is gene
 
 - If a string value is provided, the documentation for that single module will be generated.
 - If a list of strings is provided, the documentation for all listed modules will be generated.
-- If an object with module name/filename pairs (for example, `{ Module: "docs/Module.md" }`) is provided, files will be written for each of the modules. In this mode, the task requires no `dest` as no value is returned.
+- If an object with module name/filename pairs (for example, `{ Module: 'docs/Module.md' }`) is provided, files will be written for each of the modules. In this mode, the task requires no `dest` as no value is returned.
 
-### `purescript.dotPsci()`
+### `purescript.psci(options)`
 
-Generates a `.psci` file in the current directory. Each source file is added with the `:m` command.
+Generates a `.psci` file.
+
+###### `src` (String or String Array)
+
+Files added to the `.psci` file with the `:m` command. Glob syntax is supported.
+
+###### `ffi` (String or String Array)
+
+Files added to the `.psci` file with the `:f` command. Glob syntax is supported.
 
 ## Command line arguments
 

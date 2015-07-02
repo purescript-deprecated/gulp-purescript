@@ -1,30 +1,56 @@
 module GulpPurescript.Stream
   ( Stream()
   , ReadableStream()
-  , mkReadableStreamFromBuffer
+  , mkReadableStreamFromAff
   ) where
 
+import Control.Monad.Aff (Aff(), runAff)
 import Control.Monad.Eff (Eff())
+import Control.Monad.Eff.Exception (Error())
 
-import GulpPurescript.Buffer (Buffer())
+import Data.Function
 
 foreign import data Stream :: !
 
-data ReadableStream o
+data ReadableStream out
 
-foreign import mkReadableStreamFromBuffer """
-function mkReadableStreamFromBuffer(buffer) {
+type RunAff eff a = (Error -> Eff eff Unit) -> (a -> Eff eff Unit) -> Aff eff a -> Eff eff Unit
+
+mkReadableStreamFromAff :: forall eff1 eff2 out. Aff eff1 out -> Eff (stream :: Stream | eff2) (ReadableStream out)
+mkReadableStreamFromAff = runFn2 mkReadableStreamFromAffFn runAff
+
+foreign import mkReadableStreamFromAffFn """
+function mkReadableStreamFromAffFn(runAff, aff) {
   return function(){
-    var Readable = require('stream').Readable;
+    var stream = require('stream');
 
-    var stream = Readable();
+    var objectMode = true;
 
-    stream._read = function(){
-      stream.push(buffer);
-      return stream.push(null);
+    var readable = new stream.Readable({objectMode: objectMode});
+
+    readable._read = function(){
     };
 
-    return stream;
+    function onError(e) {
+      return function(){
+        readable.emit('error', e);
+      };
+    }
+
+    function onSuccess(a) {
+      return function(){
+        readable.push(a);
+        readable.push(null);
+      };
+    }
+
+    var eff = runAff(onError)(onSuccess)(aff);
+
+    eff();
+
+    return readable;
   };
 }
-""" :: forall eff. Buffer -> Eff (stream :: Stream | eff) (ReadableStream Buffer)
+""" :: forall eff1 eff2 out. Fn2 (RunAff eff1 out)
+                                 (Aff eff1 out)
+                                 (Eff (stream :: Stream | eff2) (ReadableStream out))

@@ -8,7 +8,7 @@ module GulpPurescript.Plugin
   , psci
   ) where
 
-import Control.Monad.Aff (Aff(), runAff)
+import Control.Monad.Aff (Aff())
 import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (Error())
@@ -26,7 +26,6 @@ import Data.Tuple.Nested (tuple2)
 
 import GulpPurescript.Buffer (Buffer(), mkBufferFromString)
 import GulpPurescript.ChildProcess (ChildProcess(), spawn)
-import GulpPurescript.FS (FS(), writeFile)
 import GulpPurescript.Glob (Glob(), globAll)
 import GulpPurescript.GulpUtil (File(), mkFile, mkPluginError)
 import GulpPurescript.Logalot (Logalot(), info)
@@ -36,7 +35,7 @@ import GulpPurescript.Options (Psci(..), pscOptions, pscBundleOptions, pscDocsOp
 import GulpPurescript.Package (Pkg(), Package(..), package)
 import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin(), resolveBin)
-import GulpPurescript.Stream (Stream(), ReadableStream(), mkReadableStreamFromBuffer)
+import GulpPurescript.Stream (Stream(), ReadableStream(), mkReadableStreamFromAff)
 import GulpPurescript.Which (Which(), which)
 
 newtype Argv = Argv { verbose :: Boolean }
@@ -46,7 +45,6 @@ instance isForeignArgv :: IsForeign Argv where
 
 type Effects eff =
   ( cp :: ChildProcess
-  , fs :: FS
   , glob :: Glob
   , logalot :: Logalot
   , os :: OS
@@ -110,8 +108,8 @@ execute cmd args = do
   result <- spawn cmd' args'
   return result
 
-psc :: forall eff. Foreign -> Errorback eff -> Callback eff Unit -> Eff (Effects eff) Unit
-psc opts eb cb = runAff eb cb $ do
+psc :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
+psc opts = mkReadableStreamFromAff $ do
   output <- either (throwPluginError <<< show)
                    (execute pscCommand)
                    (pscOptions opts)
@@ -119,33 +117,32 @@ psc opts eb cb = runAff eb cb $ do
     then liftEff $ info $ pscCommand ++ "\n" ++ output
     else pure unit
 
-pscBundle :: forall eff. Foreign -> Errorback eff -> Callback eff (ReadableStream Buffer) -> Eff (Effects eff) Unit
-pscBundle opts eb cb = runAff eb cb (either (throwPluginError <<< show) run (pscBundleOptions opts))
+pscBundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+pscBundle opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscBundleOptions opts))
   where
-    run :: [String] -> Aff (Effects eff) (ReadableStream Buffer)
-    run args = do
-      bundle <- execute pscBundleCommand args
-      liftEff (mkReadableStreamFromBuffer (mkBufferFromString bundle))
+    run :: [String] -> Aff (Effects eff) File
+    run args = mkFile "." <$> mkBufferFromString
+                          <$> execute pscBundleCommand args
 
-pscDocs :: forall eff. Foreign -> Errorback eff -> Callback eff File -> Eff (Effects eff) Unit
-pscDocs opts eb cb = runAff eb cb (either (throwPluginError <<< show) run (pscDocsOptions opts))
+pscDocs :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+pscDocs opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscDocsOptions opts))
   where
     run :: [String] -> Aff (Effects eff) File
     run args = mkFile "." <$> mkBufferFromString
                           <$> execute pscDocsCommand args
 
-psci :: forall eff. Foreign -> Errorback eff -> Callback eff Unit -> Eff (Effects eff) Unit
-psci opts eb cb = runAff eb cb (either (throwPluginError <<< show) write (read opts))
+psci :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+psci opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (read opts))
   where
-    write :: Psci -> Aff (Effects eff) Unit
-    write (Psci a) = do
+    run :: Psci -> Aff (Effects eff) File
+    run (Psci a) = do
       srcs <- globAll (either pure id a.src)
       ffis <- globAll (either pure id (fromMaybe (Right []) (runNullOrUndefined a.ffi)))
 
-      let srcLines = joinWith "\n" (loadModule <$> concat srcs)
-          ffiLines = joinWith "\n" (loadForeign <$> concat ffis)
+      let lines = (loadModule <$> concat srcs) <> (loadForeign <$> concat ffis)
+          buffer = mkBufferFromString (joinWith "\n" lines)
 
-      writeFile psciFilename (srcLines ++ ffiLines)
+      return (mkFile psciFilename buffer)
 
     loadModule :: String -> String
     loadModule a = psciLoadModuleCommand ++ " " ++ relative cwd a
