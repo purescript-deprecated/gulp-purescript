@@ -14,7 +14,7 @@ npm install gulp-purescript --save-dev
 
 This plugin requires that the PureScript binaries first be installed. The binaries may be installed using the [purescript](https://www.npmjs.com/package/purescript) NPM package or as described on the PureScript [installation](https://github.com/purescript/purescript/wiki/Language-Guide:-Getting-Started#installation) section of the GitHub wiki.
 
-## Example
+## Basic example
 
 ```js
 var gulp = require('gulp');
@@ -27,6 +27,8 @@ gulp.task('psc', function(){
   });
 });
 ```
+
+There is also [a more complete example](#full-example) that makes use of all the provided tasks in a common setup.
 
 ## API
 
@@ -134,4 +136,54 @@ Files added to the `.psci` file with the `:f` command. Glob syntax is supported.
 
 ## Command line arguments
 
-The `--verbose` argument will display the output during the `psc-make` command. For example `gulp --verbose`.
+The `--verbose` argument will display the output during the `psc` command. For example `gulp --verbose`.
+
+## Full example
+
+This example will make and bundle the code, run tests, and produce a `.psci` file and documentation for a project using the common `bower_components`/`src` file layout.
+
+``` js
+var gulp = require("gulp");
+var purescript = require("gulp-purescript");
+var run = require("gulp-run");
+
+var sources = [
+  "src/**/*.purs",
+  "bower_components/purescript-*/src/**/*.purs",
+];
+
+var foreigns = [
+  "src/**/*.js",
+  "bower_components/purescript-*/src/**/*.js"
+];
+
+gulp.task("make", function () {
+  return purescript.psc({ src: sources, ffi: foreigns });
+});
+
+gulp.task("bundle", ["make"], function () {
+  return purescript.pscBundle({ src: "output/**/*.js", output: "dist/bundle.js" });
+});
+
+gulp.task("docs", function () {
+  return purescript.pscDocs({
+      src: sources,
+      docgen: {
+        "Name.Of.Module1": "docs/Name/Of/Module1.md",
+        "Name.Of.Module2": "docs/Name/Of/Module2.md"
+      }
+    });
+});
+
+gulp.task("dotpsci", function () {
+  return purescript.psci({ src: sources, ffi: foreigns })
+    .pipe(gulp.dest("."));
+});
+
+gulp.task("test", ["make"], function() {
+  return purescript.pscBundle({ src: "output/**/*.js", main: "Test.Main" })
+    .pipe(run("node"));
+});
+
+gulp.task("default", ["bundle", "docs", "dotpsci", "test"]);
+```
