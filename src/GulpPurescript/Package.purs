@@ -4,6 +4,8 @@ module GulpPurescript.Package
   , package
   ) where
 
+import Prelude
+
 import Control.Monad.Eff (Eff())
 
 import Data.Either (either)
@@ -22,9 +24,4 @@ instance isForeignPackage :: IsForeign Package where
 package :: forall eff. Eff (package :: Pkg | eff) (Maybe Package)
 package = either (const Nothing) Just <$> read <$> packageFn
 
-foreign import packageFn """
-function packageFn() {
-  var pkg = require('../../package.json');
-  return pkg;
-}
-""" :: forall eff. Eff (package :: Pkg | eff) Foreign
+foreign import packageFn :: forall eff. Eff (package :: Pkg | eff) Foreign

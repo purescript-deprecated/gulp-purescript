@@ -134,10 +134,6 @@ Files added to the `.psci` file with the `:m` command. Glob syntax is supported.
 
 Files added to the `.psci` file with the `:f` command. Glob syntax is supported.
 
-## Command line arguments
-
-The `--verbose` argument will display the output during the `psc` command. For example `gulp --verbose`.
-
 ## Full example
 
 This example will make and bundle the code, run tests, and produce a `.psci` file and documentation for a project using the common `bower_components`/`src` file layout.

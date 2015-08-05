@@ -10,22 +10,10 @@ var gulp = require('gulp');
 
 var through2 = require('through2');
 
-var rewire = require('rewire');
-
 var purescript = require('./');
 
 test('psc - basic', function(t){
   t.plan(1);
-
-  var purescript = rewire('./');
-
-  var mock = {
-    success: function(){
-      t.fail('Should not get a log message');
-    }
-  };
-
-  purescript.__set__('logalot', mock);
 
   var fixture = 'Fixture1.purs';
 

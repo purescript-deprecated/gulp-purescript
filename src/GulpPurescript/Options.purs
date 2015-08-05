@@ -5,6 +5,8 @@ module GulpPurescript.Options
   , pscDocsOptions
   ) where
 
+import Prelude
+
 import Control.Alt ((<|>))
 
 import Data.Array (concat, singleton)
@@ -24,19 +26,19 @@ srcKey = "src"
 
 noOptsOpt = "no-opts"
 
-noOptsKey = camelcase noOptsOpt
+noOptsKey = camelcaseFn noOptsOpt
 
 noMagicDoOpt = "no-magic-do"
 
-noMagicDoKey = camelcase noMagicDoOpt
+noMagicDoKey = camelcaseFn noMagicDoOpt
 
 noTcoOpt = "no-tco"
 
-noTcoKey = "noTco"
+noTcoKey = camelcaseFn noTcoOpt
 
 verboseErrorsOpt = "verbose-errors"
 
-verboseErrorsKey = camelcase verboseErrorsOpt
+verboseErrorsKey = camelcaseFn verboseErrorsOpt
 
 outputOpt = "output"
 
@@ -44,7 +46,7 @@ outputKey = outputOpt
 
 browserNamespaceOpt = "browser-namespace"
 
-browserNamespaceKey = camelcase browserNamespaceOpt
+browserNamespaceKey = camelcaseFn browserNamespaceOpt
 
 commentsOpt = "comments"
 
@@ -52,7 +54,7 @@ commentsKey = commentsOpt
 
 noPrefixOpt = "no-prefix"
 
-noPrefixKey = camelcase noPrefixOpt
+noPrefixKey = camelcaseFn noPrefixOpt
 
 mainOpt = "main"
 
@@ -76,11 +78,11 @@ docgenKey = docgenOpt
 
 requirePathOpt = "require-path"
 
-requirePathKey = camelcase requirePathOpt
+requirePathKey = camelcaseFn requirePathOpt
 
 newtype Psc
-  = Psc { src :: Either String [String]
-        , ffi :: NullOrUndefined (Either String [String])
+  = Psc { src :: Either String (Array String)
+        , ffi :: NullOrUndefined (Either String (Array String))
         , output :: NullOrUndefined String
         , noTco :: NullOrUndefined Boolean
         , noMagicDo :: NullOrUndefined Boolean
@@ -92,27 +94,27 @@ newtype Psc
         }
 
 newtype PscBundle
-  = PscBundle { src :: Either String [String]
+  = PscBundle { src :: Either String (Array String)
               , output :: NullOrUndefined String
-              , "module" :: NullOrUndefined (Either String [String])
+              , "module" :: NullOrUndefined (Either String (Array String))
               , main :: NullOrUndefined (Either Boolean String)
               , browserNamespace :: NullOrUndefined String
               }
 
 newtype PscDocs
-  = PscDocs { src :: Either String [String]
+  = PscDocs { src :: Either String (Array String)
             , format :: NullOrUndefined Format
             , docgen :: NullOrUndefined Docgen
             }
 
 newtype Psci
-  = Psci { src :: Either String [String]
-         , ffi :: NullOrUndefined (Either String [String])
+  = Psci { src :: Either String (Array String)
+         , ffi :: NullOrUndefined (Either String (Array String))
          }
 
 newtype Docgen = Docgen Foreign
 
-newtype PathArray = PathArray [String]
+newtype PathArray = PathArray (Array String)
 
 data Format = Markdown | ETags | CTags
 
@@ -183,10 +185,10 @@ instance isForeignFormat :: IsForeign Format where
                                       "markdown" -> Right Markdown
                                       "etags" -> Right ETags
                                       "ctags" -> Right CTags
-                                      a -> Left $ TypeMismatch "Format" a)
+                                      b -> Left $ TypeMismatch "Format" b)
 
 class CommandLineOption a where
-  opt :: String -> NullOrUndefined a -> [String]
+  opt :: String -> NullOrUndefined a -> Array String
 
 instance commandLineOptionBoolean :: CommandLineOption Boolean where
   opt key val = maybe [] (\a -> if a then ["--" ++ key] else []) (runNullOrUndefined val)
@@ -199,7 +201,7 @@ instance commandLineOptionEither :: (CommandLineOption a, CommandLineOption b) =
                                  (\a -> opt key (NullOrUndefined $ Just a)))
                       (runNullOrUndefined val)
 
-instance commandLineOptionArray :: (CommandLineOption a) => CommandLineOption [a] where
+instance commandLineOptionArray :: (CommandLineOption a) => CommandLineOption (Array a) where
   opt key val = concat $ opt key <$> (NullOrUndefined <<< Just)
                                  <$> (fromMaybe [] $ runNullOrUndefined val)
 
@@ -209,19 +211,19 @@ instance commandLineOptionPathArray :: CommandLineOption PathArray where
 instance commandLineOptionDocgen :: CommandLineOption Docgen where
   opt key val = opt key (NullOrUndefined (parseDocgen <$> (runNullOrUndefined val)))
 
-parseDocgen :: Docgen -> [String]
+parseDocgen :: Docgen -> Array String
 parseDocgen (Docgen obj) = either (const []) id $ parseName obj
                                               <|> parseList obj
                                               <|> parseObj obj
                                               <|> pure []
   where
-    parseName :: Foreign -> F [String]
+    parseName :: Foreign -> F (Array String)
     parseName obj = singleton <$> read obj
 
-    parseList :: Foreign -> F [String]
+    parseList :: Foreign -> F (Array String)
     parseList obj = read obj
 
-    parseObj :: Foreign -> F [String]
+    parseObj :: Foreign -> F (Array String)
     parseObj obj = do
       modules <- keys obj
       for modules \m -> (\f -> m ++ ":" ++ f) <$> readProp m obj
@@ -234,7 +236,7 @@ instance commandLineOptionFormat :: CommandLineOption Format where
                                            CTags -> NullOrUndefined (Just "ctags"))
                                (runNullOrUndefined val))
 
-pscOptions :: Foreign -> Either ForeignError [String]
+pscOptions :: Foreign -> Either ForeignError (Array String)
 pscOptions opts = fold <$> parsed
   where parsed = read opts :: F Psc
         fold (Psc a) = either pure id a.src <>
@@ -248,7 +250,7 @@ pscOptions opts = fold <$> parsed
                        opt noPrefixOpt a.noPrefix <>
                        opt requirePathOpt a.requirePath
 
-pscBundleOptions :: Foreign -> Either ForeignError [String]
+pscBundleOptions :: Foreign -> Either ForeignError (Array String)
 pscBundleOptions opts = fold <$> parsed
   where parsed = read opts :: F PscBundle
         fold (PscBundle a) = either pure id a.src <>
@@ -257,19 +259,13 @@ pscBundleOptions opts = fold <$> parsed
                              opt mainOpt a.main <>
                              opt browserNamespaceOpt a.browserNamespace
 
-pscDocsOptions :: Foreign -> Either ForeignError [String]
+pscDocsOptions :: Foreign -> Either ForeignError (Array String)
 pscDocsOptions opts = fold <$> parsed
   where parsed = read opts :: F PscDocs
         fold (PscDocs a) = either pure id a.src <>
                            opt formatOpt a.format <>
                            opt docgenOpt a.docgen
 
-foreign import expandGlob """
-function expandGlob() {
-  var glob = require("glob");
-  return function(pattern) {
-    return glob.sync(pattern);
-  };
-}""" :: String -> [String]
+foreign import expandGlob :: String -> (Array String)
 
-foreign import camelcase "function camelcase(a){return require('camelcase')(a);}" :: String -> String
+foreign import camelcaseFn :: String -> String
