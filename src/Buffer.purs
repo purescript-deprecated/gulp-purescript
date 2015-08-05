@@ -5,8 +5,4 @@ module GulpPurescript.Buffer
 
 data Buffer
 
-foreign import mkBufferFromString """
-function mkBufferFromString(str) {
-  return new Buffer(str);
-}
-""" :: String -> Buffer
+foreign import mkBufferFromString :: String -> Buffer

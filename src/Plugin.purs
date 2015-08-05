@@ -8,6 +8,8 @@ module GulpPurescript.Plugin
   , psci
   ) where
 
+import Prelude
+
 import Control.Monad.Aff (Aff())
 import Control.Monad.Eff (Eff())
 import Control.Monad.Eff.Class (liftEff)
@@ -77,18 +79,18 @@ pscDocsCommand = "psc-docs"
 
 isVerbose = maybe false (\(Argv a) -> a.verbose) (minimist argv)
 
-foreign import cwd "var cwd = process.cwd();" :: String
+foreign import cwd :: String
 
-foreign import argv "var argv = process.argv.slice(2);" :: [String]
+foreign import argv :: Array String
 
 throwPluginError :: forall eff. String -> Aff (Effects eff) _
 throwPluginError msg = liftEff (flip mkPluginError msg <$> (maybe "" (\(Package a) -> a.name))
                                                        <$> package) >>= throwError
 
-resolve :: forall eff. String -> [String] -> Aff (Effects eff) (Tuple String [String])
+resolve :: forall eff. String -> Array String -> Aff (Effects eff) (Tuple String (Array String))
 resolve cmd args = catchError primary fallback
   where
-    primary :: Aff (Effects eff) (Tuple String [String])
+    primary :: Aff (Effects eff) (Tuple String (Array String))
     primary = do
       bin <- resolveBin pursPackage { executable: cmd }
       os <- liftEff platform
@@ -96,13 +98,13 @@ resolve cmd args = catchError primary fallback
                     Just Win32 -> tuple2 nodeCommand ([bin] <> args)
                     _ -> tuple2 bin args
 
-    fallback :: Error -> Aff (Effects eff) (Tuple String [String])
+    fallback :: Error -> Aff (Effects eff) (Tuple String (Array String))
     fallback _ = (const $ tuple2 cmd args) <$> catchError (which cmd) mapError
 
     mapError :: Error -> Aff (Effects eff) String
     mapError _ = throwPluginError ("Failed to find " ++ cmd ++ ". " ++ "Please ensure it is available on your system.")
 
-execute :: forall eff. String -> [String] -> Aff (Effects eff) String
+execute :: forall eff. String -> Array String -> Aff (Effects eff) String
 execute cmd args = do
   Tuple cmd' args' <- resolve cmd args
   result <- spawn cmd' args'
@@ -120,14 +122,14 @@ psc opts = mkReadableStreamFromAff $ do
 pscBundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
 pscBundle opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscBundleOptions opts))
   where
-    run :: [String] -> Aff (Effects eff) File
+    run :: Array String -> Aff (Effects eff) File
     run args = mkFile "." <$> mkBufferFromString
                           <$> execute pscBundleCommand args
 
 pscDocs :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
 pscDocs opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscDocsOptions opts))
   where
-    run :: [String] -> Aff (Effects eff) File
+    run :: Array String -> Aff (Effects eff) File
     run args = mkFile "." <$> mkBufferFromString
                           <$> execute pscDocsCommand args
 

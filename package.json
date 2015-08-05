@@ -17,9 +17,9 @@
   "scripts": {
     "test:run": "node test.js | tap-spec",
     "test": "npm run-script build && npm run-script test:run",
-    "build:bootstrap": "npm install gulp-purescript@0.3.1",
-    "build": "npm run-script build:bootstrap && npm run-script build:compile && npm run-script build:package",
-    "build:compile": "gulp build",
+    "build": "npm run-script build:compile && npm run-script build:docs && npm run-script build:package",
+    "build:compile": "./node_modules/.bin/pulp build",
+    "build:docs": "./node_modules/.bin/pulp docs",
     "build:package": "./node_modules/.bin/webpack --progress --colors --profile --bail",
     "build:json": "./node_modules/.bin/webpack --progress --colors --profile --bail --json > index.json",
     "prepublish": "npm run-script build"
@@ -44,6 +44,7 @@
     "gulp": "^3.8.11",
     "gulp-plumber": "^1.0.0",
     "json-loader": "^0.5.1",
+    "pulp": "^4.3.0",
     "rewire": "^2.3.1",
     "run-sequence": "^1.0.2",
     "tap-spec": "^2.2.2",

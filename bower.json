@@ -2,15 +2,7 @@
   "name": "gulp-purescript",
   "private": true,
   "devDependencies": {
-    "purescript-foreign": "0.4.2",
-    "purescript-maybe": "0.2.2",
-    "purescript-either": "0.1.8",
-    "purescript-aff": "0.10.1",
-    "purescript-exceptions": "0.2.3",
-    "purescript-arrays": "0.3.7",
-    "purescript-transformers": "0.5.5",
-    "purescript-monad-eff": "0.1.0",
-    "purescript-tuples": "0.3.4",
-    "purescript-control": "0.2.6"
+    "purescript-aff": "~0.11.3",
+    "purescript-foreign": "~0.6.0"
   }
 }

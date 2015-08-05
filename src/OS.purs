@@ -4,6 +4,8 @@ module GulpPurescript.OS
   , platform
   ) where
 
+import Prelude
+
 import Control.Monad.Eff (Eff())
 
 import Data.Either (either)
@@ -30,9 +32,4 @@ instance isForeignPlatform :: IsForeign Platform where
 platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
 platform = either (const Nothing) Just <$> read <$> platformFn
 
-foreign import platformFn """
-function platformFn() {
-  var os = require('os');
-  return os.platform();
-}
-""" :: forall eff. Eff (os :: OS | eff) Foreign
+foreign import platformFn :: forall eff. Eff (os :: OS | eff) Foreign
