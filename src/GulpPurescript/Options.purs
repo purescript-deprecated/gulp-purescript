@@ -34,7 +34,7 @@ noMagicDoKey = camelcaseFn noMagicDoOpt
 
 noTcoOpt = "no-tco"
 
-noTcoKey = "noTco"
+noTcoKey = camelcaseFn noTcoOpt
 
 verboseErrorsOpt = "verbose-errors"
 
