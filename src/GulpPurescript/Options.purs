@@ -185,7 +185,7 @@ instance isForeignFormat :: IsForeign Format where
                                       "markdown" -> Right Markdown
                                       "etags" -> Right ETags
                                       "ctags" -> Right CTags
-                                      a -> Left $ TypeMismatch "Format" a)
+                                      b -> Left $ TypeMismatch "Format" b)
 
 class CommandLineOption a where
   opt :: String -> NullOrUndefined a -> Array String

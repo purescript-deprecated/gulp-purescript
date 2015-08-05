@@ -22,7 +22,7 @@ import Data.Foreign (Foreign())
 import Data.Foreign.Class (IsForeign, read, readProp)
 import Data.Foreign.NullOrUndefined (runNullOrUndefined)
 import Data.Maybe (Maybe(Just), maybe, fromMaybe)
-import Data.String (joinWith)
+import Data.String (joinWith, null)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested (tuple2)
 
@@ -31,7 +31,6 @@ import GulpPurescript.ChildProcess (ChildProcess(), spawn)
 import GulpPurescript.Glob (Glob(), globAll)
 import GulpPurescript.GulpUtil (File(), mkFile, mkPluginError)
 import GulpPurescript.Logalot (Logalot(), info)
-import GulpPurescript.Minimist (minimist)
 import GulpPurescript.OS (OS(), Platform(Win32), platform)
 import GulpPurescript.Options (Psci(..), pscOptions, pscBundleOptions, pscDocsOptions)
 import GulpPurescript.Package (Pkg(), Package(..), package)
@@ -39,11 +38,6 @@ import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin(), resolveBin)
 import GulpPurescript.Stream (Stream(), ReadableStream(), mkReadableStreamFromAff)
 import GulpPurescript.Which (Which(), which)
-
-newtype Argv = Argv { verbose :: Boolean }
-
-instance isForeignArgv :: IsForeign Argv where
-  read obj = (\a -> Argv { verbose: a }) <$> readProp "verbose" obj
 
 type Effects eff =
   ( cp :: ChildProcess
@@ -77,11 +71,7 @@ pscBundleCommand = "psc-bundle"
 
 pscDocsCommand = "psc-docs"
 
-isVerbose = maybe false (\(Argv a) -> a.verbose) (minimist argv)
-
 foreign import cwd :: String
-
-foreign import argv :: Array String
 
 throwPluginError :: forall eff. String -> Aff (Effects eff) _
 throwPluginError msg = liftEff (flip mkPluginError msg <$> (maybe "" (\(Package a) -> a.name))
@@ -115,9 +105,9 @@ psc opts = mkReadableStreamFromAff $ do
   output <- either (throwPluginError <<< show)
                    (execute pscCommand)
                    (pscOptions opts)
-  if isVerbose
-    then liftEff $ info $ pscCommand ++ "\n" ++ output
-    else pure unit
+  if null output
+     then pure unit
+     else liftEff $ info $ pscCommand ++ "\n" ++ output
 
 pscBundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
 pscBundle opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscBundleOptions opts))

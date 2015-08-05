@@ -21,8 +21,10 @@ function spawnFn(command, args, errback, callback) {
     });
 
     process.on('close', function(code){
-      if (code !== 0) errback(new Error(Buffer.concat([stdout, stderr]).toString()))();
-      else callback(stdout.toString())();
+      var result = Buffer.concat([stdout, stderr]).toString();
+
+      if (code !== 0) errback(new Error(result))();
+      else callback(result)();
     });
   };
 }
