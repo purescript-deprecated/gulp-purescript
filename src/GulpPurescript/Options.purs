@@ -44,9 +44,9 @@ outputOpt = "output"
 
 outputKey = outputOpt
 
-browserNamespaceOpt = "browser-namespace"
+namespaceOpt = "namespace"
 
-browserNamespaceKey = camelcaseFn browserNamespaceOpt
+namespaceKey = namespaceOpt
 
 commentsOpt = "comments"
 
@@ -98,7 +98,7 @@ newtype PscBundle
               , output :: NullOrUndefined String
               , "module" :: NullOrUndefined (Either String (Array String))
               , main :: NullOrUndefined (Either Boolean String)
-              , browserNamespace :: NullOrUndefined String
+              , namespace :: NullOrUndefined String
               }
 
 newtype PscDocs
@@ -118,10 +118,6 @@ newtype PathArray = PathArray (Array String)
 
 data Format = Markdown | ETags | CTags
 
-instance isForeignEither :: (IsForeign a, IsForeign b) => IsForeign (Either a b) where
-  read a = (Left <$> read a :: F a) <|>
-           (Right <$> read a :: F b)
-
 instance isForeignPsc :: IsForeign Psc where
   read obj =
     Psc <$> ({ src: _
@@ -134,8 +130,8 @@ instance isForeignPsc :: IsForeign Psc where
              , comments: _
              , noPrefix: _
              , requirePath: _
-             } <$> readProp srcKey obj
-               <*> readProp ffiKey obj
+             } <$> (readProp srcKey obj >>= readEither)
+               <*> (readProp ffiKey obj >>= readEitherNU)
                <*> readProp outputKey obj
                <*> readProp noTcoKey obj
                <*> readProp noMagicDoKey obj
@@ -151,19 +147,19 @@ instance isForeignPscBundle :: IsForeign PscBundle where
                    , output: _
                    , "module": _
                    , main: _
-                   , browserNamespace: _
-                   } <$> readProp srcKey obj
+                   , namespace: _
+                   } <$> (readProp srcKey obj >>= readEither)
                      <*> readProp outputKey obj
-                     <*> readProp moduleKey obj
-                     <*> readProp mainKey obj
-                     <*> readProp browserNamespaceKey obj)
+                     <*> (readProp moduleKey obj >>= readEitherNU)
+                     <*> (readProp mainKey obj >>= readEitherNU)
+                     <*> readProp namespaceKey obj)
 
 instance isForeignPscDocs :: IsForeign PscDocs where
   read obj =
     PscDocs <$> ({ src: _
                  , format: _
                  , docgen: _
-                 } <$> readProp srcKey obj
+                 } <$> (readProp srcKey obj >>= readEither)
                    <*> readProp formatKey obj
                    <*> readProp docgenOpt obj)
 
@@ -171,8 +167,8 @@ instance isForeignPsci :: IsForeign Psci where
   read obj =
     Psci <$> ({ src: _
               , ffi: _
-              } <$> readProp srcKey obj
-                <*> readProp ffiKey obj)
+              } <$> (readProp srcKey obj >>= readEither)
+                <*> (readProp ffiKey obj >>= readEitherNU))
 
 instance isForeignPathArray :: IsForeign PathArray where
   read val = PathArray <$> read val
@@ -257,7 +253,7 @@ pscBundleOptions opts = fold <$> parsed
                              opt outputOpt a.output <>
                              opt moduleOpt a."module" <>
                              opt mainOpt a.main <>
-                             opt browserNamespaceOpt a.browserNamespace
+                             opt namespaceOpt a.namespace
 
 pscDocsOptions :: Foreign -> Either ForeignError (Array String)
 pscDocsOptions opts = fold <$> parsed
@@ -265,6 +261,13 @@ pscDocsOptions opts = fold <$> parsed
         fold (PscDocs a) = either pure id a.src <>
                            opt formatOpt a.format <>
                            opt docgenOpt a.docgen
+
+readEither :: forall left right. (IsForeign left, IsForeign right) => Foreign -> F (Either left right)
+readEither a = (Left <$> read a) <|> (Right <$> read a)
+
+readEitherNU :: forall left right. (IsForeign left, IsForeign right) => NullOrUndefined Foreign -> F (NullOrUndefined (Either left right))
+readEitherNU a @ (NullOrUndefined Nothing) = pure (NullOrUndefined Nothing)
+readEitherNU (NullOrUndefined (Just a)) = (NullOrUndefined <<< Just) <$> readEither a
 
 foreign import expandGlob :: String -> (Array String)
 
