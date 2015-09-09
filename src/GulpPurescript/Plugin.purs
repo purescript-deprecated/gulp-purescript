@@ -73,7 +73,7 @@ pscDocsCommand = "psc-docs"
 
 foreign import cwd :: String
 
-throwPluginError :: forall eff. String -> Aff (Effects eff) _
+throwPluginError :: forall eff result. String -> Aff (Effects eff) result
 throwPluginError msg = liftEff (flip mkPluginError msg <$> (maybe "" (\(Package a) -> a.name))
                                                        <$> package) >>= throwError
 

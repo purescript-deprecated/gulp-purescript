@@ -94,9 +94,9 @@ The name of the module or modules to use as entry points for dead code eliminati
 
 Toggles `--main` or sets `--main=<string>` that generates code to run the `main` function in the specified module or the `Main` module by default.
 
-###### `browserNamespace` (String)
+###### `namespace` (String)
 
-Sets `--browser-namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
+Sets `--namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
 
 ###### `requirePath` (String)
 
