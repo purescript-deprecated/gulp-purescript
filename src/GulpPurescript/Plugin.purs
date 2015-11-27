@@ -16,17 +16,17 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (Error())
 import Control.Monad.Error.Class (catchError, throwError)
 
-import Data.Array (concat)
+import Data.Array as A
 import Data.Either (Either(..), either)
 import Data.Foreign (Foreign())
-import Data.Foreign.Class (IsForeign, read, readProp)
+import Data.Foreign.Class (read)
 import Data.Foreign.NullOrUndefined (runNullOrUndefined)
-import Data.Maybe (Maybe(Just), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.String (joinWith, null)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested (tuple2)
 
-import GulpPurescript.Buffer (Buffer(), mkBufferFromString)
+import GulpPurescript.Buffer (mkBufferFromString)
 import GulpPurescript.ChildProcess (ChildProcess(), spawn)
 import GulpPurescript.Glob (Glob(), globAll)
 import GulpPurescript.GulpUtil (File(), mkFile, mkPluginError)
@@ -38,6 +38,15 @@ import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin(), resolveBin)
 import GulpPurescript.Stream (Stream(), ReadableStream(), mkReadableStreamFromAff)
 import GulpPurescript.Which (Which(), which)
+
+foreign import argv :: Array String
+
+rtsOpts :: Array String
+rtsOpts =
+  let startIndex = A.elemIndex "--psc-rts-flags" argv
+  in case startIndex of
+    Just i -> ["+RTS"] <> A.drop (i + 1) argv <> ["-RTS"]
+    _ -> []
 
 type Effects eff =
   ( cp :: ChildProcess
@@ -55,20 +64,28 @@ type Errorback eff = Error -> Eff (Effects eff) Unit
 
 type Callback eff a = a -> Eff (Effects eff) Unit
 
+nodeCommand :: String
 nodeCommand = "node"
 
+pursPackage :: String
 pursPackage = "purescript"
 
+psciFilename :: String
 psciFilename = ".psci"
 
+psciLoadModuleCommand :: String
 psciLoadModuleCommand = ":m"
 
+psciLoadForeignCommand :: String
 psciLoadForeignCommand = ":f"
 
+pscCommand :: String
 pscCommand = "psc"
 
+pscBundleCommand :: String
 pscBundleCommand = "psc-bundle"
 
+pscDocsCommand :: String
 pscDocsCommand = "psc-docs"
 
 foreign import cwd :: String
@@ -103,7 +120,7 @@ execute cmd args = do
 psc :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
 psc opts = mkReadableStreamFromAff $ do
   output <- either (throwPluginError <<< show)
-                   (execute pscCommand)
+                   (execute pscCommand <<< (<> rtsOpts))
                    (pscOptions opts)
   if null output
      then pure unit
@@ -131,7 +148,7 @@ psci opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (rea
       srcs <- globAll (either pure id a.src)
       ffis <- globAll (either pure id (fromMaybe (Right []) (runNullOrUndefined a.ffi)))
 
-      let lines = (loadModule <$> concat srcs) <> (loadForeign <$> concat ffis)
+      let lines = (loadModule <$> A.concat srcs) <> (loadForeign <$> A.concat ffis)
           buffer = mkBufferFromString (joinWith "\n" lines)
 
       return (mkFile psciFilename buffer)

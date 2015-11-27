@@ -256,7 +256,8 @@ pscBundleOptions opts = fold <$> parsed
                              opt outputOpt a.output <>
                              opt moduleOpt a."module" <>
                              opt mainOpt a.main <>
-                             opt namespaceOpt a.namespace
+                             opt namespaceOpt a.namespace <>
+                             opt requirePathOpt a.requirePath
 
 pscDocsOptions :: Foreign -> Either ForeignError (Array String)
 pscDocsOptions opts = fold <$> parsed
