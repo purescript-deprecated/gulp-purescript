@@ -106,7 +106,7 @@ Sets `--namespace=<string>` that specifies the namespace that PureScript modules
 
 ###### `requirePath` (String)
 
-Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript. This should be set any value used in the `psc` task.
+Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript. This should be set to match any value used in the `psc` task.
 
 ### `purescript.pscDocs(options)`
 
