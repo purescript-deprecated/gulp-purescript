@@ -99,6 +99,7 @@ newtype PscBundle
               , "module" :: NullOrUndefined (Either String (Array String))
               , main :: NullOrUndefined (Either Boolean String)
               , namespace :: NullOrUndefined String
+              , requirePath :: NullOrUndefined String
               }
 
 newtype PscDocs
@@ -148,11 +149,13 @@ instance isForeignPscBundle :: IsForeign PscBundle where
                    , "module": _
                    , main: _
                    , namespace: _
+                   , requirePath: _
                    } <$> (readProp srcKey obj >>= readEither)
                      <*> readProp outputKey obj
                      <*> (readProp moduleKey obj >>= readEitherNU)
                      <*> (readProp mainKey obj >>= readEitherNU)
-                     <*> readProp namespaceKey obj)
+                     <*> readProp namespaceKey obj
+                     <*> readProp requirePathKey obj)
 
 instance isForeignPscDocs :: IsForeign PscDocs where
   read obj =
@@ -253,7 +256,8 @@ pscBundleOptions opts = fold <$> parsed
                              opt outputOpt a.output <>
                              opt moduleOpt a."module" <>
                              opt mainOpt a.main <>
-                             opt namespaceOpt a.namespace
+                             opt namespaceOpt a.namespace <>
+                             opt requirePathOpt a.requirePath
 
 pscDocsOptions :: Foreign -> Either ForeignError (Array String)
 pscDocsOptions opts = fold <$> parsed
