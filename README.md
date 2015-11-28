@@ -34,6 +34,8 @@ There is also [a more complete example](#full-example) that makes use of all the
 
 Refer to the PureScript [compiler usage](https://github.com/purescript/purescript/wiki/Language-Guide:-Getting-Started#compiler-usage) section of the Github wiki for additional details on the behaviour of each option below.
 
+Options can be passed to the Haskell runtime system for `psc` by passing a `--psc-rts-opts` argument to `gulp`. Any values that follow this flag will be passed through to the runtime. There is no need to include `+RTS`/`-RTS` options as these are inserted automatically. See [the GHC documentation](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime-control.html#rts-opts-cmdline) for information on the available RTS options.
+
 ### `purescript.psc(options)`
 
 Invokes the `psc` command. The following options are supported.
@@ -74,6 +76,10 @@ Sets `--output=<string>` the specifies the output directory, `output` by default
 
 Toggles `--no-prefix` that does not include the comment header.
 
+###### `requirePath` (String)
+
+Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript.
+
 ### `purescript.pscBundle(options)`
 
 Invokes the `psc-bundle` command. The following options are supported.
@@ -100,7 +106,7 @@ Sets `--namespace=<string>` that specifies the namespace that PureScript modules
 
 ###### `requirePath` (String)
 
-Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript.
+Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript. This should be set any value used in the `psc` task.
 
 ### `purescript.pscDocs(options)`
 
