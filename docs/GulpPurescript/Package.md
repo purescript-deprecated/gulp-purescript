@@ -15,7 +15,7 @@ newtype Package
 
 ##### Instances
 ``` purescript
-instance isForeignPackage :: IsForeign Package
+IsForeign Package
 ```
 
 #### `package`

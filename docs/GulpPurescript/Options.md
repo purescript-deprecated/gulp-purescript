@@ -9,7 +9,7 @@ newtype Psci
 
 ##### Instances
 ``` purescript
-instance isForeignPsci :: IsForeign Psci
+IsForeign Psci
 ```
 
 #### `pscOptions`

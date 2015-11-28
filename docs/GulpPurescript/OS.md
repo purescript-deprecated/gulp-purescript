@@ -17,8 +17,8 @@ data Platform
 
 ##### Instances
 ``` purescript
-instance showPlatform :: Show Platform
-instance isForeignPlatform :: IsForeign Platform
+Show Platform
+IsForeign Platform
 ```
 
 #### `platform`
