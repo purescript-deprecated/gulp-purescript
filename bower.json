@@ -1,8 +1,8 @@
 {
   "name": "gulp-purescript",
   "private": true,
-  "devDependencies": {
-    "purescript-aff": "~0.13.0",
-    "purescript-foreign": "~0.7.0"
+  "dependencies": {
+    "purescript-aff": "slamdata/purescript-aff#088ef5f4f14c29fe239c89826029ac2f76dce666",
+    "purescript-foreign": "~1.0.0"
   }
 }

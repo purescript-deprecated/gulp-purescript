@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.ChildProcess
-
 var child_process = require('cross-spawn');
 
 function spawnFn(command, args, errback, callback) {

@@ -1,14 +1,14 @@
 module GulpPurescript.GulpUtil
-  ( File()
+  ( File
   , mkPluginError
   , mkFile
   ) where
 
-import Control.Monad.Eff.Exception (Error())
+import Control.Monad.Eff.Exception (Error)
 
-import Data.Function
+import Data.Function.Uncurried (Fn2, runFn2)
 
-import GulpPurescript.Buffer (Buffer())
+import GulpPurescript.Buffer (Buffer)
 
 data File
 

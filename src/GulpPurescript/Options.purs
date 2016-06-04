@@ -5,84 +5,108 @@ module GulpPurescript.Options
   , pscDocsOptions
   ) where
 
-import Prelude
+import Prelude ((<>), (<$>), (<*>), (<<<), ($), (>>=), bind, const, id, pure)
 
 import Control.Alt ((<|>))
 
 import Data.Array (concat, singleton)
 import Data.Either (Either(..), either)
-import Data.Foreign (Foreign(), ForeignError(TypeMismatch), F())
-import Data.Foreign.Class (IsForeign, read, readProp)
+import Data.Foreign (Foreign, ForeignError(TypeMismatch), F)
+import Data.Foreign.Class (class IsForeign, read, readProp)
 import Data.Foreign.Keys (keys)
-import Data.Foreign.NullOrUndefined (NullOrUndefined(..), runNullOrUndefined)
+import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Traversable (for)
-import Data.Tuple (Tuple())
-import Data.Tuple.Nested (tuple2)
 
-srcOpt = "src"
-
+srcKey :: String
 srcKey = "src"
 
+noOptsOpt :: String
 noOptsOpt = "no-opts"
 
+noOptsKey :: String
 noOptsKey = camelcaseFn noOptsOpt
 
+noMagicDoOpt :: String
 noMagicDoOpt = "no-magic-do"
 
+noMagicDoKey :: String
 noMagicDoKey = camelcaseFn noMagicDoOpt
 
+noTcoOpt :: String
 noTcoOpt = "no-tco"
 
+noTcoKey :: String
 noTcoKey = camelcaseFn noTcoOpt
 
+verboseErrorsOpt :: String
 verboseErrorsOpt = "verbose-errors"
 
+verboseErrorsKey :: String
 verboseErrorsKey = camelcaseFn verboseErrorsOpt
 
+outputOpt :: String
 outputOpt = "output"
 
+outputKey :: String
 outputKey = outputOpt
 
+namespaceOpt :: String
 namespaceOpt = "namespace"
 
+namespaceKey :: String
 namespaceKey = namespaceOpt
 
+commentsOpt :: String
 commentsOpt = "comments"
 
+commentsKey :: String
 commentsKey = commentsOpt
 
+noPrefixOpt :: String
 noPrefixOpt = "no-prefix"
 
+noPrefixKey :: String
 noPrefixKey = camelcaseFn noPrefixOpt
 
+sourceMapsOpt :: String
+sourceMapsOpt = "source-maps"
+
+sourceMapsKey :: String
+sourceMapsKey = camelcaseFn sourceMapsOpt
+
+jsonErrorsOpt :: String
+jsonErrorsOpt = "json-errors"
+
+jsonErrorsKey :: String
+jsonErrorsKey = camelcaseFn jsonErrorsOpt
+
+mainOpt :: String
 mainOpt = "main"
 
+mainKey :: String
 mainKey = mainOpt
 
+moduleOpt :: String
 moduleOpt = "module"
 
+moduleKey :: String
 moduleKey = moduleOpt
 
+formatOpt :: String
 formatOpt = "format"
 
+formatKey :: String
 formatKey = formatOpt
 
-ffiOpt = "ffi"
-
-ffiKey = ffiOpt
-
+docgenOpt :: String
 docgenOpt = "docgen"
 
+docgenKey :: String
 docgenKey = docgenOpt
-
-requirePathOpt = "require-path"
-
-requirePathKey = camelcaseFn requirePathOpt
 
 newtype Psc
   = Psc { src :: Either String (Array String)
-        , ffi :: NullOrUndefined (Either String (Array String))
         , output :: NullOrUndefined String
         , noTco :: NullOrUndefined Boolean
         , noMagicDo :: NullOrUndefined Boolean
@@ -90,7 +114,8 @@ newtype Psc
         , verboseErrors :: NullOrUndefined Boolean
         , comments :: NullOrUndefined Boolean
         , noPrefix :: NullOrUndefined Boolean
-        , requirePath :: NullOrUndefined String
+        , sourceMaps :: NullOrUndefined Boolean
+        , jsonErrors :: NullOrUndefined Boolean
         }
 
 newtype PscBundle
@@ -99,7 +124,6 @@ newtype PscBundle
               , "module" :: NullOrUndefined (Either String (Array String))
               , main :: NullOrUndefined (Either Boolean String)
               , namespace :: NullOrUndefined String
-              , requirePath :: NullOrUndefined String
               }
 
 newtype PscDocs
@@ -109,9 +133,7 @@ newtype PscDocs
             }
 
 newtype Psci
-  = Psci { src :: Either String (Array String)
-         , ffi :: NullOrUndefined (Either String (Array String))
-         }
+  = Psci { src :: Either String (Array String) }
 
 newtype Docgen = Docgen Foreign
 
@@ -122,7 +144,6 @@ data Format = Markdown | ETags | CTags
 instance isForeignPsc :: IsForeign Psc where
   read obj =
     Psc <$> ({ src: _
-             , ffi: _
              , output: _
              , noTco: _
              , noMagicDo: _
@@ -130,9 +151,9 @@ instance isForeignPsc :: IsForeign Psc where
              , verboseErrors: _
              , comments: _
              , noPrefix: _
-             , requirePath: _
+             , sourceMaps: _
+             , jsonErrors: _
              } <$> (readProp srcKey obj >>= readEither)
-               <*> (readProp ffiKey obj >>= readEitherNU)
                <*> readProp outputKey obj
                <*> readProp noTcoKey obj
                <*> readProp noMagicDoKey obj
@@ -140,7 +161,8 @@ instance isForeignPsc :: IsForeign Psc where
                <*> readProp verboseErrorsKey obj
                <*> readProp commentsKey obj
                <*> readProp noPrefixKey obj
-               <*> readProp requirePathKey obj)
+               <*> readProp sourceMapsKey obj
+               <*> readProp jsonErrorsKey obj)
 
 instance isForeignPscBundle :: IsForeign PscBundle where
   read obj =
@@ -149,13 +171,11 @@ instance isForeignPscBundle :: IsForeign PscBundle where
                    , "module": _
                    , main: _
                    , namespace: _
-                   , requirePath: _
                    } <$> (readProp srcKey obj >>= readEither)
                      <*> readProp outputKey obj
                      <*> (readProp moduleKey obj >>= readEitherNU)
                      <*> (readProp mainKey obj >>= readEitherNU)
-                     <*> readProp namespaceKey obj
-                     <*> readProp requirePathKey obj)
+                     <*> readProp namespaceKey obj)
 
 instance isForeignPscDocs :: IsForeign PscDocs where
   read obj =
@@ -167,11 +187,7 @@ instance isForeignPscDocs :: IsForeign PscDocs where
                    <*> readProp docgenOpt obj)
 
 instance isForeignPsci :: IsForeign Psci where
-  read obj =
-    Psci <$> ({ src: _
-              , ffi: _
-              } <$> (readProp srcKey obj >>= readEither)
-                <*> (readProp ffiKey obj >>= readEitherNU))
+  read obj = Psci <$> ({ src: _ } <$> (readProp srcKey obj >>= readEither))
 
 instance isForeignPathArray :: IsForeign PathArray where
   read val = PathArray <$> read val
@@ -190,25 +206,25 @@ class CommandLineOption a where
   opt :: String -> NullOrUndefined a -> Array String
 
 instance commandLineOptionBoolean :: CommandLineOption Boolean where
-  opt key val = maybe [] (\a -> if a then ["--" ++ key] else []) (runNullOrUndefined val)
+  opt key val = maybe [] (\a -> if a then ["--" <> key] else []) (unNullOrUndefined val)
 
 instance commandLineOptionString :: CommandLineOption String where
-  opt key val = maybe [] (\a -> ["--" ++ key ++ "=" ++ a]) (runNullOrUndefined val)
+  opt key val = maybe [] (\a -> ["--" <> key <> "=" <> a]) (unNullOrUndefined val)
 
 instance commandLineOptionEither :: (CommandLineOption a, CommandLineOption b) => CommandLineOption (Either a b) where
   opt key val = maybe [] (either (\a -> opt key (NullOrUndefined $ Just a))
                                  (\a -> opt key (NullOrUndefined $ Just a)))
-                      (runNullOrUndefined val)
+                      (unNullOrUndefined val)
 
 instance commandLineOptionArray :: (CommandLineOption a) => CommandLineOption (Array a) where
   opt key val = concat $ opt key <$> (NullOrUndefined <<< Just)
-                                 <$> (fromMaybe [] $ runNullOrUndefined val)
+                                 <$> (fromMaybe [] $ unNullOrUndefined val)
 
 instance commandLineOptionPathArray :: CommandLineOption PathArray where
-  opt key val = opt key (NullOrUndefined ((\(PathArray a) -> a >>= expandGlob) <$> (runNullOrUndefined val)))
+  opt key val = opt key (NullOrUndefined ((\(PathArray a) -> a >>= expandGlob) <$> (unNullOrUndefined val)))
 
 instance commandLineOptionDocgen :: CommandLineOption Docgen where
-  opt key val = opt key (NullOrUndefined (parseDocgen <$> (runNullOrUndefined val)))
+  opt key val = opt key (NullOrUndefined (parseDocgen <$> (unNullOrUndefined val)))
 
 parseDocgen :: Docgen -> Array String
 parseDocgen (Docgen obj) = either (const []) id $ parseName obj
@@ -216,16 +232,16 @@ parseDocgen (Docgen obj) = either (const []) id $ parseName obj
                                               <|> parseObj obj
                                               <|> pure []
   where
-    parseName :: Foreign -> F (Array String)
-    parseName obj = singleton <$> read obj
+  parseName :: Foreign -> F (Array String)
+  parseName obj = singleton <$> read obj
 
-    parseList :: Foreign -> F (Array String)
-    parseList obj = read obj
+  parseList :: Foreign -> F (Array String)
+  parseList obj = read obj
 
-    parseObj :: Foreign -> F (Array String)
-    parseObj obj = do
-      modules <- keys obj
-      for modules \m -> (\f -> m ++ ":" ++ f) <$> readProp m obj
+  parseObj :: Foreign -> F (Array String)
+  parseObj obj = do
+    modules <- keys obj
+    for modules \m -> (\f -> m <> ":" <> f) <$> readProp m obj
 
 instance commandLineOptionFormat :: CommandLineOption Format where
   opt key val = opt key (maybe (NullOrUndefined Nothing)
@@ -233,38 +249,49 @@ instance commandLineOptionFormat :: CommandLineOption Format where
                                            Markdown -> NullOrUndefined (Just "markdown")
                                            ETags -> NullOrUndefined (Just "etags")
                                            CTags -> NullOrUndefined (Just "ctags"))
-                               (runNullOrUndefined val))
+                               (unNullOrUndefined val))
 
 pscOptions :: Foreign -> Either ForeignError (Array String)
 pscOptions opts = fold <$> parsed
-  where parsed = read opts :: F Psc
-        fold (Psc a) = either pure id a.src <>
-                       opt ffiOpt a.ffi <>
-                       opt outputOpt a.output <>
-                       opt noTcoOpt a.noTco <>
-                       opt noMagicDoOpt a.noMagicDo <>
-                       opt noOptsOpt a.noOpts <>
-                       opt verboseErrorsOpt a.verboseErrors <>
-                       opt commentsOpt a.comments <>
-                       opt noPrefixOpt a.noPrefix <>
-                       opt requirePathOpt a.requirePath
+  where
+  parsed :: F Psc
+  parsed = read opts
+
+  fold :: Psc -> Array String
+  fold (Psc a) = either pure id a.src <>
+                 opt outputOpt a.output <>
+                 opt noTcoOpt a.noTco <>
+                 opt noMagicDoOpt a.noMagicDo <>
+                 opt noOptsOpt a.noOpts <>
+                 opt verboseErrorsOpt a.verboseErrors <>
+                 opt commentsOpt a.comments <>
+                 opt noPrefixOpt a.noPrefix <>
+                 opt sourceMapsOpt a.sourceMaps <>
+                 opt jsonErrorsOpt a.jsonErrors
 
 pscBundleOptions :: Foreign -> Either ForeignError (Array String)
 pscBundleOptions opts = fold <$> parsed
-  where parsed = read opts :: F PscBundle
-        fold (PscBundle a) = either pure id a.src <>
-                             opt outputOpt a.output <>
-                             opt moduleOpt a."module" <>
-                             opt mainOpt a.main <>
-                             opt namespaceOpt a.namespace <>
-                             opt requirePathOpt a.requirePath
+  where
+  parsed :: F PscBundle
+  parsed = read opts
+
+  fold :: PscBundle -> Array String
+  fold (PscBundle a) = either pure id a.src <>
+                       opt outputOpt a.output <>
+                       opt moduleOpt a."module" <>
+                       opt mainOpt a.main <>
+                       opt namespaceOpt a.namespace
 
 pscDocsOptions :: Foreign -> Either ForeignError (Array String)
 pscDocsOptions opts = fold <$> parsed
-  where parsed = read opts :: F PscDocs
-        fold (PscDocs a) = either pure id a.src <>
-                           opt formatOpt a.format <>
-                           opt docgenOpt a.docgen
+  where
+  parsed :: F PscDocs
+  parsed = read opts
+
+  fold :: PscDocs -> Array String
+  fold (PscDocs a) = either pure id a.src <>
+                     opt formatOpt a.format <>
+                     opt docgenOpt a.docgen
 
 readEither :: forall left right. (IsForeign left, IsForeign right) => Foreign -> F (Either left right)
 readEither a = (Left <$> read a) <|> (Right <$> read a)

@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.Glob
-
 var glob = require('glob');
 
 var async = require('async');

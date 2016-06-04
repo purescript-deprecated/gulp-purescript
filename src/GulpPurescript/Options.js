@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.Options
-
 var glob = require('glob');
 
 var camelcase = require('camelcase');

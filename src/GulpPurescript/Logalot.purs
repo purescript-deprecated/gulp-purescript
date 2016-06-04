@@ -1,11 +1,11 @@
 module GulpPurescript.Logalot
-  ( Logalot()
+  ( Logalot
   , info
   ) where
 
-import Prelude
+import Prelude (Unit)
 
-import Control.Monad.Eff (Eff())
+import Control.Monad.Eff (Eff)
 
 foreign import data Logalot :: !
 

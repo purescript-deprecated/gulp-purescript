@@ -1,5 +1,5 @@
 module GulpPurescript.Buffer
-  ( Buffer()
+  ( Buffer
   , mkBufferFromString
   ) where
 

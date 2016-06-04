@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.Path
-
 var path = require('path');
 
 function relativeFn(from, to) {
