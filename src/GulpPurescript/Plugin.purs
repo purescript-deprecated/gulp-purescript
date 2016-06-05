@@ -16,7 +16,7 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (catchError, throwError)
 
-import Data.Array (elemIndex, drop, concat) as Array
+import Data.Array as Array
 import Data.Either (either)
 import Data.Foreign (Foreign)
 import Data.Foreign.Class (read)
