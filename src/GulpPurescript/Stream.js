@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.Stream
-
 var stream = require('stream');
 
 function mkReadableStreamFromAffFn(runAff, aff) {

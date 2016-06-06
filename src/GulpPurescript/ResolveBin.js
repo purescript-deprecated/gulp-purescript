@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.ResolveBin
-
 var resolveBin = require('resolve-bin');
 
 function resolveBinFn(pkg, options, errback, callback) {

@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.Which
-
 var which = require('which');
 
 function whichFn(command, errback, callback) {

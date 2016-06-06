@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.GulpUtil
-
 var gutil = require('gulp-util');
 
 function mkPluginErrorFn(name, message) {

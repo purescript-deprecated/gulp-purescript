@@ -1,15 +1,15 @@
 module GulpPurescript.ChildProcess
-  ( ChildProcess()
+  ( ChildProcess
   , spawn
   ) where
 
 import Prelude
 
-import Control.Monad.Aff (Aff(), makeAff)
-import Control.Monad.Eff (Eff())
-import Control.Monad.Eff.Exception (Error())
+import Control.Monad.Aff (Aff, makeAff)
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Exception (Error)
 
-import Data.Function
+import Data.Function.Uncurried (Fn4, runFn4)
 
 foreign import data ChildProcess :: !
 

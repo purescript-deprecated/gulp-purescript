@@ -10,12 +10,12 @@ var gulp = require('gulp');
 
 var through2 = require('through2');
 
-var purescript = require('./');
+var purescript = require('../');
 
 test('psc - basic', function(t){
   t.plan(1);
 
-  var fixture = 'Fixture1.purs';
+  var fixture = './test/Fixture1.purs';
 
   var stream = purescript.psc({src: fixture});
 
@@ -28,13 +28,13 @@ test('psc - basic', function(t){
 test('psc - error', function(t){
   t.plan(2);
 
-  var fixture = 'Fixture2.purs';
+  var fixture = './test/Fixture2.purs';
 
   var stream = purescript.psc({src: fixture});
 
   stream.on('error', function(e){
     t.ok(/"where"/.test(e.message), 'should have a failure message');
-    t.equal('Error', e.name);
+    t.equal(e.name, 'Error');
   });
 });
 
@@ -46,19 +46,19 @@ test('psc - invalid option type', function(t){
 
     stream.on('error', function(e){
       t.ok(/type mismatch/i.test(error.message), 'should have a failure message');
-      t.equal('Error', error.name);
+      t.equal(error.name, 'Error');
     });
   }
   catch (error) {
     t.ok(/type mismatch/i.test(error.message), 'should have a failure message');
-    t.equal('Error', error.name);
+    t.equal(error.name, 'Error');
   }
 });
 
 test('psc-bundle - basic', function(t){
   t.plan(1);
 
-  var fixture = 'foreign.js';
+  var fixture = './test/foreign.js';
 
   var stream = purescript.pscBundle({src: fixture});
 
@@ -71,15 +71,15 @@ test('psc-bundle - basic', function(t){
 test('psci - basic', function(t){
   t.plan(2);
 
-  var fixture = 'Fixture1.purs';
+  var fixture = './test/Fixture1.purs';
 
-  var output = ':m ' + fixture;
+  var output = ':m test/Fixture1.purs';
 
   var stream = purescript.psci({src: fixture});
 
   stream.pipe(through2.obj(function(chunk, encoding, callback){
-    t.equal('.psci', chunk.path);
-    t.equal(output, chunk.contents.toString());
+    t.equal(chunk.path, '.psci');
+    t.equal(chunk.contents.toString(), output);
     callback();
   }));
 });

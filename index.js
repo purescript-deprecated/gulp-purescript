@@ -1,6 +1,6 @@
 'use strict';
 
-var gulpPurescript = require('GulpPurescript.Plugin');
+var gulpPurescript = require('./output/GulpPurescript.Plugin');
 
 function psc(options) {
   return gulpPurescript.psc(options)();

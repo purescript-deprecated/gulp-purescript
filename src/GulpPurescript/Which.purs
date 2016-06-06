@@ -1,15 +1,15 @@
 module GulpPurescript.Which
-  ( Which()
+  ( Which
   , which
   ) where
 
-import Prelude
+import Prelude (Unit, ($))
 
-import Control.Monad.Aff (Aff(), makeAff)
-import Control.Monad.Eff (Eff())
-import Control.Monad.Eff.Exception (Error())
+import Control.Monad.Aff (Aff, makeAff)
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Exception (Error)
 
-import Data.Function
+import Data.Function.Uncurried (Fn3, runFn3)
 
 foreign import data Which :: !
 

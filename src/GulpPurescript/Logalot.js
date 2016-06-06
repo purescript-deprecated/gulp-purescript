@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.Logalot
-
 var logalot = require('logalot');
 
 function info(message) {

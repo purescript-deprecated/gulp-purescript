@@ -44,10 +44,6 @@ Invokes the `psc` command. The following options are supported.
 
 Files to compile. Glob syntax is supported.
 
-###### `ffi` (String or String Array)
-
-Files for code that is included with a `foreign import` in the PureScript source. Glob syntax is supported.
-
 ###### `noTco` (Boolean)
 
 Toggles `--no-tco` that disables tail-call optimizations.
@@ -76,9 +72,13 @@ Sets `--output=<string>` the specifies the output directory, `output` by default
 
 Toggles `--no-prefix` that does not include the comment header.
 
-###### `requirePath` (String)
+###### `sourceMaps` (Boolean)
 
-Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript.
+Toggles `--source-maps` that generates source maps.
+
+###### `jsonErrors` (Boolean)
+
+Toggles `--json-errors` that prints errors to stderr as JSON.
 
 ### `purescript.pscBundle(options)`
 
@@ -103,10 +103,6 @@ Toggles `--main` or sets `--main=<string>` that generates code to run the `main`
 ###### `namespace` (String)
 
 Sets `--namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
-
-###### `requirePath` (String)
-
-Sets `--require-path=<string>` that specifies the path prefix to use for `require()` calls in the generated JavaScript. This should be set to match any value used in the `psc` task.
 
 ### `purescript.pscDocs(options)`
 
@@ -136,10 +132,6 @@ Generates a `.psci` file.
 
 Files added to the `.psci` file with the `:m` command. Glob syntax is supported.
 
-###### `ffi` (String or String Array)
-
-Files added to the `.psci` file with the `:f` command. Glob syntax is supported.
-
 ## Full example
 
 This example will make and bundle the code, run tests, and produce a `.psci` file and documentation for a project using the common `bower_components`/`src` file layout.
@@ -154,13 +146,8 @@ var sources = [
   "bower_components/purescript-*/src/**/*.purs",
 ];
 
-var foreigns = [
-  "src/**/*.js",
-  "bower_components/purescript-*/src/**/*.js"
-];
-
 gulp.task("make", function () {
-  return purescript.psc({ src: sources, ffi: foreigns });
+  return purescript.psc({ src: sources });
 });
 
 gulp.task("bundle", ["make"], function () {
@@ -178,7 +165,7 @@ gulp.task("docs", function () {
 });
 
 gulp.task("dotpsci", function () {
-  return purescript.psci({ src: sources, ffi: foreigns })
+  return purescript.psci({ src: sources })
     .pipe(gulp.dest("."));
 });
 

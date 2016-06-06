@@ -1,7 +1,5 @@
 .psci
 npm-debug.log
-index.js
 node_modules/
 bower_components/
-build/
 output/

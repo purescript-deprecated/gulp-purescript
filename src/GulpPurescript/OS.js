@@ -1,7 +1,5 @@
 'use strict';
 
-// module GulpPurescript.OS
-
 var os = require('os');
 
 function platformFn() {
