@@ -42,7 +42,7 @@ foreign import argv :: Array String
 
 rtsOpts :: Array String
 rtsOpts =
-  let startIndex = Array.elemIndex "--psc-rts-flags" argv
+  let startIndex = Array.elemIndex "--purs-rts-flags" argv
   in case startIndex of
     Just i -> ["+RTS"] <> Array.drop (i + 1) argv <> ["-RTS"]
     _ -> []

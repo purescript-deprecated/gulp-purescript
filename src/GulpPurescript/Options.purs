@@ -34,12 +34,6 @@ noMagicDoOpt = "no-magic-do"
 noMagicDoKey :: String
 noMagicDoKey = camelcaseFn noMagicDoOpt
 
-noTcoOpt :: String
-noTcoOpt = "no-tco"
-
-noTcoKey :: String
-noTcoKey = camelcaseFn noTcoOpt
-
 verboseErrorsOpt :: String
 verboseErrorsOpt = "verbose-errors"
 
@@ -76,6 +70,12 @@ sourceMapsOpt = "source-maps"
 sourceMapsKey :: String
 sourceMapsKey = camelcaseFn sourceMapsOpt
 
+dumpCoreFnOpt :: String
+dumpCoreFnOpt = "dump-corefn"
+
+dumpCoreFnKey :: String
+dumpCoreFnKey = "dumpCoreFn"
+
 jsonErrorsOpt :: String
 jsonErrorsOpt = "json-errors"
 
@@ -109,13 +109,11 @@ docgenKey = docgenOpt
 newtype Psc
   = Psc { src :: Either String (Array String)
         , output :: Maybe String
-        , noTco :: Maybe Boolean
-        , noMagicDo :: Maybe Boolean
-        , noOpts :: Maybe Boolean
         , verboseErrors :: Maybe Boolean
         , comments :: Maybe Boolean
-        , noPrefix :: Maybe Boolean
         , sourceMaps :: Maybe Boolean
+        , dumpCoreFn :: Maybe Boolean
+        , noPrefix :: Maybe Boolean
         , jsonErrors :: Maybe Boolean
         }
 
@@ -125,6 +123,7 @@ newtype PscBundle
               , "module" :: Maybe (Either String (Array String))
               , main :: Maybe (Either Boolean String)
               , namespace :: Maybe String
+              , sourceMaps :: Maybe Boolean
               }
 
 newtype PscDocs
@@ -146,15 +145,13 @@ readPsc :: Foreign -> F Psc
 readPsc obj = do
   src <- readSources =<< readProp srcKey obj
   output <- readPropNU readString outputKey obj
-  noTco <- readPropNU readBoolean noTcoKey obj
-  noMagicDo <- readPropNU readBoolean noMagicDoKey obj
-  noOpts <- readPropNU readBoolean noOptsKey obj
   verboseErrors <- readPropNU readBoolean verboseErrorsKey obj
   comments <- readPropNU readBoolean commentsKey obj
-  noPrefix <- readPropNU readBoolean noPrefixKey obj
   sourceMaps <- readPropNU readBoolean sourceMapsKey obj
+  dumpCoreFn <- readPropNU readBoolean dumpCoreFnKey obj
+  noPrefix <- readPropNU readBoolean noPrefixKey obj
   jsonErrors <- readPropNU readBoolean jsonErrorsKey obj
-  pure $ Psc { src, output, noTco, noMagicDo, noOpts, verboseErrors, comments, noPrefix, sourceMaps, jsonErrors }
+  pure $ Psc { src, output, verboseErrors, comments, sourceMaps, dumpCoreFn, noPrefix, jsonErrors }
 
 readPscBundle :: Foreign -> F PscBundle
 readPscBundle obj = do
@@ -163,7 +160,8 @@ readPscBundle obj = do
   mod <- readPropNU readSources moduleKey obj
   main <- readPropNU (readEither readBoolean readString) mainKey obj
   namespace <- readPropNU readString namespaceKey obj
-  pure $ PscBundle { src, output, "module": mod, main, namespace }
+  sourceMaps <- readPropNU readBoolean sourceMapsKey obj
+  pure $ PscBundle { src, output, "module": mod, main, namespace, sourceMaps }
 
 readPscDocs :: Foreign -> F PscDocs
 readPscDocs obj = do
@@ -243,13 +241,11 @@ pscOptions opts = fold <$> parsed
   fold :: Psc -> Array String
   fold (Psc a) = either pure id a.src <>
                  opt outputOpt a.output <>
-                 opt noTcoOpt a.noTco <>
-                 opt noMagicDoOpt a.noMagicDo <>
-                 opt noOptsOpt a.noOpts <>
                  opt verboseErrorsOpt a.verboseErrors <>
                  opt commentsOpt a.comments <>
-                 opt noPrefixOpt a.noPrefix <>
                  opt sourceMapsOpt a.sourceMaps <>
+                 opt dumpCoreFnOpt a.dumpCoreFn <>
+                 opt noPrefixOpt a.noPrefix <>
                  opt jsonErrorsOpt a.jsonErrors
 
 pscBundleOptions :: Foreign -> F (Array String)
@@ -263,7 +259,8 @@ pscBundleOptions opts = fold <$> parsed
                        opt outputOpt a.output <>
                        opt moduleOpt a."module" <>
                        opt mainOpt a.main <>
-                       opt namespaceOpt a.namespace
+                       opt namespaceOpt a.namespace <>
+                       opt sourceMapsOpt a.sourceMaps
 
 pscDocsOptions :: Foreign -> F (Array String)
 pscDocsOptions opts = fold <$> parsed

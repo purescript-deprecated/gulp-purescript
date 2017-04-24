@@ -34,7 +34,7 @@ There is also [a more complete example](#full-example) that makes use of all the
 
 Refer to the PureScript [compiler usage](https://github.com/purescript/purescript/wiki/Language-Guide:-Getting-Started#compiler-usage) section of the Github wiki for additional details on the behaviour of each option below.
 
-Options can be passed to the Haskell runtime system for `psc` by passing a `--psc-rts-flags` argument to `gulp`. Any values that follow this flag will be passed through to the runtime. There is no need to include `+RTS`/`-RTS` options as these are inserted automatically. See [the GHC documentation](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime-control.html#rts-opts-cmdline) for information on the available RTS options.
+Options can be passed to the Haskell runtime system for `purs` by passing a `--purs-rts-flags` argument to `gulp`. Any values that follow this flag will be passed through to the runtime. There is no need to include `+RTS`/`-RTS` options as these are inserted automatically. See [the GHC documentation](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime-control.html#rts-opts-cmdline) for information on the available RTS options.
 
 ### `purescript.psc(options)`
 
@@ -44,17 +44,9 @@ Invokes the `psc` command. The following options are supported.
 
 Files to compile. Glob syntax is supported.
 
-###### `noTco` (Boolean)
+###### `output` (String)
 
-Toggles `--no-tco` that disables tail-call optimizations.
-
-###### `noMagicDo` (Boolean)
-
-Toggles `--no-magic-do` that disables optimizations overloading the do keyword generating efficient code for the `Eff` monad.
-
-###### `noOpts` (Boolean)
-
-Toggles `--no-opts` that skips the optimization phase.
+Sets `--output=<string>` the specifies the output directory, `output` by default.
 
 ###### `verboseErrors` (Boolean)
 
@@ -64,17 +56,17 @@ Toggles `--verbose-errors` that displays verbose error messages.
 
 Toggles `--comments` that includes comments in generated code.
 
-###### `output` (String)
+###### `sourceMaps` (Boolean)
 
-Sets `--output=<string>` the specifies the output directory, `output` by default.
+Toggles `--source-maps` that generates source maps.
+
+###### `dumpCoreFn` (Boolean)
+
+Toggles `--dump-corefn` that generates dumps the (functional) core representation of the compiled code at `output/*/corefn.json`.
 
 ###### `noPrefix` (Boolean)
 
 Toggles `--no-prefix` that does not include the comment header.
-
-###### `sourceMaps` (Boolean)
-
-Toggles `--source-maps` that generates source maps.
 
 ###### `jsonErrors` (Boolean)
 
@@ -82,7 +74,7 @@ Toggles `--json-errors` that prints errors to stderr as JSON.
 
 ### `purescript.pscBundle(options)`
 
-Invokes the `psc-bundle` command. The following options are supported.
+Invokes the `purs compile` command. The following options are supported.
 
 ###### `src` (String or String Array)
 
@@ -104,9 +96,13 @@ Toggles `--main` or sets `--main=<string>` that generates code to run the `main`
 
 Sets `--namespace=<string>` that specifies the namespace that PureScript modules will be exported to when running in the browser.
 
+###### `sourceMaps` (Boolean)
+
+Toggles `--source-maps` that generates source maps.
+
 ### `purescript.pscDocs(options)`
 
-Invokes the `psc-docs` command. The following options are supported.
+Invokes the `purs docs` command. The following options are supported.
 
 ###### `src` (String or String Array)
 
