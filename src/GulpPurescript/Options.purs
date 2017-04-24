@@ -3,20 +3,21 @@ module GulpPurescript.Options
   , pscOptions
   , pscBundleOptions
   , pscDocsOptions
+  , readPsci
   ) where
 
-import Prelude ((<>), (<$>), (<*>), (<<<), ($), (>>=), bind, const, id, pure)
+import Prelude
 
 import Control.Alt ((<|>))
+import Control.Monad.Except (runExcept)
 
 import Data.Array (concat, singleton)
 import Data.Either (Either(..), either)
-import Data.Foreign (Foreign, ForeignError(TypeMismatch), F)
-import Data.Foreign.Class (class IsForeign, read, readProp)
+import Data.Foreign (F, Foreign, ForeignError(..), fail, readArray, readBoolean, readNullOrUndefined, readString)
+import Data.Foreign.Index (readProp)
 import Data.Foreign.Keys (keys)
-import Data.Foreign.NullOrUndefined (NullOrUndefined(..), unNullOrUndefined)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Traversable (for)
+import Data.Traversable (for, traverse)
 
 srcKey :: String
 srcKey = "src"
@@ -107,29 +108,29 @@ docgenKey = docgenOpt
 
 newtype Psc
   = Psc { src :: Either String (Array String)
-        , output :: NullOrUndefined String
-        , noTco :: NullOrUndefined Boolean
-        , noMagicDo :: NullOrUndefined Boolean
-        , noOpts :: NullOrUndefined Boolean
-        , verboseErrors :: NullOrUndefined Boolean
-        , comments :: NullOrUndefined Boolean
-        , noPrefix :: NullOrUndefined Boolean
-        , sourceMaps :: NullOrUndefined Boolean
-        , jsonErrors :: NullOrUndefined Boolean
+        , output :: Maybe String
+        , noTco :: Maybe Boolean
+        , noMagicDo :: Maybe Boolean
+        , noOpts :: Maybe Boolean
+        , verboseErrors :: Maybe Boolean
+        , comments :: Maybe Boolean
+        , noPrefix :: Maybe Boolean
+        , sourceMaps :: Maybe Boolean
+        , jsonErrors :: Maybe Boolean
         }
 
 newtype PscBundle
   = PscBundle { src :: Either String (Array String)
-              , output :: NullOrUndefined String
-              , "module" :: NullOrUndefined (Either String (Array String))
-              , main :: NullOrUndefined (Either Boolean String)
-              , namespace :: NullOrUndefined String
+              , output :: Maybe String
+              , "module" :: Maybe (Either String (Array String))
+              , main :: Maybe (Either Boolean String)
+              , namespace :: Maybe String
               }
 
 newtype PscDocs
   = PscDocs { src :: Either String (Array String)
-            , format :: NullOrUndefined Format
-            , docgen :: NullOrUndefined Docgen
+            , format :: Maybe Format
+            , docgen :: Maybe Docgen
             }
 
 newtype Psci
@@ -141,121 +142,103 @@ newtype PathArray = PathArray (Array String)
 
 data Format = Markdown | ETags | CTags
 
-instance isForeignPsc :: IsForeign Psc where
-  read obj =
-    Psc <$> ({ src: _
-             , output: _
-             , noTco: _
-             , noMagicDo: _
-             , noOpts: _
-             , verboseErrors: _
-             , comments: _
-             , noPrefix: _
-             , sourceMaps: _
-             , jsonErrors: _
-             } <$> (readProp srcKey obj >>= readEither)
-               <*> readProp outputKey obj
-               <*> readProp noTcoKey obj
-               <*> readProp noMagicDoKey obj
-               <*> readProp noOptsKey obj
-               <*> readProp verboseErrorsKey obj
-               <*> readProp commentsKey obj
-               <*> readProp noPrefixKey obj
-               <*> readProp sourceMapsKey obj
-               <*> readProp jsonErrorsKey obj)
+readPsc :: Foreign -> F Psc
+readPsc obj = do
+  src <- readSources =<< readProp srcKey obj
+  output <- readPropNU readString outputKey obj
+  noTco <- readPropNU readBoolean noTcoKey obj
+  noMagicDo <- readPropNU readBoolean noMagicDoKey obj
+  noOpts <- readPropNU readBoolean noOptsKey obj
+  verboseErrors <- readPropNU readBoolean verboseErrorsKey obj
+  comments <- readPropNU readBoolean commentsKey obj
+  noPrefix <- readPropNU readBoolean noPrefixKey obj
+  sourceMaps <- readPropNU readBoolean sourceMapsKey obj
+  jsonErrors <- readPropNU readBoolean jsonErrorsKey obj
+  pure $ Psc { src, output, noTco, noMagicDo, noOpts, verboseErrors, comments, noPrefix, sourceMaps, jsonErrors }
 
-instance isForeignPscBundle :: IsForeign PscBundle where
-  read obj =
-    PscBundle <$> ({ src: _
-                   , output: _
-                   , "module": _
-                   , main: _
-                   , namespace: _
-                   } <$> (readProp srcKey obj >>= readEither)
-                     <*> readProp outputKey obj
-                     <*> (readProp moduleKey obj >>= readEitherNU)
-                     <*> (readProp mainKey obj >>= readEitherNU)
-                     <*> readProp namespaceKey obj)
+readPscBundle :: Foreign -> F PscBundle
+readPscBundle obj = do
+  src <- readSources =<< readProp srcKey obj
+  output <- readPropNU readString outputKey obj
+  mod <- readPropNU readSources moduleKey obj
+  main <- readPropNU (readEither readBoolean readString) mainKey obj
+  namespace <- readPropNU readString namespaceKey obj
+  pure $ PscBundle { src, output, "module": mod, main, namespace }
 
-instance isForeignPscDocs :: IsForeign PscDocs where
-  read obj =
-    PscDocs <$> ({ src: _
-                 , format: _
-                 , docgen: _
-                 } <$> (readProp srcKey obj >>= readEither)
-                   <*> readProp formatKey obj
-                   <*> readProp docgenOpt obj)
+readPscDocs :: Foreign -> F PscDocs
+readPscDocs obj = do
+  src <- readSources =<< readProp srcKey obj
+  format <- readPropNU readFormat formatKey obj
+  docgen <- readPropNU readDocgen docgenOpt obj
+  pure $ PscDocs { src, format, docgen }
 
-instance isForeignPsci :: IsForeign Psci where
-  read obj = Psci <$> ({ src: _ } <$> (readProp srcKey obj >>= readEither))
+readPsci :: Foreign -> F Psci
+readPsci obj = Psci <$> { src: _ } <$> (readSources =<< readProp srcKey obj)
 
-instance isForeignPathArray :: IsForeign PathArray where
-  read val = PathArray <$> read val
+readPathArray :: Foreign -> F PathArray
+readPathArray = map PathArray <<< traverse readString <=< readArray
 
-instance isForeignDocgen :: IsForeign Docgen where
-  read val = Docgen <$> read val
+readDocgen :: Foreign -> F Docgen
+readDocgen = pure <<< Docgen
 
-instance isForeignFormat :: IsForeign Format where
-  read val = read val >>= (\a -> case a of
-                                      "markdown" -> Right Markdown
-                                      "etags" -> Right ETags
-                                      "ctags" -> Right CTags
-                                      b -> Left $ TypeMismatch "Format" b)
+readFormat :: Foreign -> F Format
+readFormat = readString >=> case _ of
+  "markdown" -> pure Markdown
+  "etags" -> pure ETags
+  "ctags" -> pure CTags
+  b -> fail $ TypeMismatch "Format" b
 
 class CommandLineOption a where
-  opt :: String -> NullOrUndefined a -> Array String
+  opt :: String -> Maybe a -> Array String
 
 instance commandLineOptionBoolean :: CommandLineOption Boolean where
-  opt key val = maybe [] (\a -> if a then ["--" <> key] else []) (unNullOrUndefined val)
+  opt key = maybe [] (\a -> if a then ["--" <> key] else [])
 
 instance commandLineOptionString :: CommandLineOption String where
-  opt key val = maybe [] (\a -> ["--" <> key <> "=" <> a]) (unNullOrUndefined val)
+  opt key = maybe [] (\a -> ["--" <> key <> "=" <> a])
 
 instance commandLineOptionEither :: (CommandLineOption a, CommandLineOption b) => CommandLineOption (Either a b) where
-  opt key val = maybe [] (either (\a -> opt key (NullOrUndefined $ Just a))
-                                 (\a -> opt key (NullOrUndefined $ Just a)))
-                      (unNullOrUndefined val)
+  opt key = maybe [] (either (opt key <<< Just) (opt key <<< Just))
 
 instance commandLineOptionArray :: (CommandLineOption a) => CommandLineOption (Array a) where
-  opt key val = concat $ opt key <$> (NullOrUndefined <<< Just)
-                                 <$> (fromMaybe [] $ unNullOrUndefined val)
+  opt key val = concat $ opt key <$> Just <$> (fromMaybe [] val)
 
 instance commandLineOptionPathArray :: CommandLineOption PathArray where
-  opt key val = opt key (NullOrUndefined ((\(PathArray a) -> a >>= expandGlob) <$> (unNullOrUndefined val)))
+  opt key = opt key <<< map \(PathArray a) -> a >>= expandGlob
 
 instance commandLineOptionDocgen :: CommandLineOption Docgen where
-  opt key val = opt key (NullOrUndefined (parseDocgen <$> (unNullOrUndefined val)))
-
-parseDocgen :: Docgen -> Array String
-parseDocgen (Docgen obj) = either (const []) id $ parseName obj
-                                              <|> parseList obj
-                                              <|> parseObj obj
-                                              <|> pure []
-  where
-  parseName :: Foreign -> F (Array String)
-  parseName obj = singleton <$> read obj
-
-  parseList :: Foreign -> F (Array String)
-  parseList obj = read obj
-
-  parseObj :: Foreign -> F (Array String)
-  parseObj obj = do
-    modules <- keys obj
-    for modules \m -> (\f -> m <> ":" <> f) <$> readProp m obj
+  opt key = opt key <<< map parseDocgen
 
 instance commandLineOptionFormat :: CommandLineOption Format where
-  opt key val = opt key (maybe (NullOrUndefined Nothing)
-                               (\a -> case a of
-                                           Markdown -> NullOrUndefined (Just "markdown")
-                                           ETags -> NullOrUndefined (Just "etags")
-                                           CTags -> NullOrUndefined (Just "ctags"))
-                               (unNullOrUndefined val))
+  opt key = opt key <<< map case _ of
+    Markdown -> "markdown"
+    ETags -> "etags"
+    CTags -> "ctags"
 
-pscOptions :: Foreign -> Either ForeignError (Array String)
+parseDocgen :: Docgen -> Array String
+parseDocgen (Docgen obj) =
+  either (const []) id $ runExcept
+    $ parseName obj
+    <|> parseList obj
+    <|> parseObj obj
+    <|> pure []
+  where
+  parseName :: Foreign -> F (Array String)
+  parseName = map singleton <<< readString
+
+  parseList :: Foreign -> F (Array String)
+  parseList = traverse readString <=< readArray
+
+  parseObj :: Foreign -> F (Array String)
+  parseObj obj' = do
+    modules <- keys obj'
+    for modules \m -> (\f -> m <> ":" <> f) <$> (readString =<< readProp m obj')
+
+pscOptions :: Foreign -> F (Array String)
 pscOptions opts = fold <$> parsed
   where
   parsed :: F Psc
-  parsed = read opts
+  parsed = readPsc opts
 
   fold :: Psc -> Array String
   fold (Psc a) = either pure id a.src <>
@@ -269,11 +252,11 @@ pscOptions opts = fold <$> parsed
                  opt sourceMapsOpt a.sourceMaps <>
                  opt jsonErrorsOpt a.jsonErrors
 
-pscBundleOptions :: Foreign -> Either ForeignError (Array String)
+pscBundleOptions :: Foreign -> F (Array String)
 pscBundleOptions opts = fold <$> parsed
   where
   parsed :: F PscBundle
-  parsed = read opts
+  parsed = readPscBundle opts
 
   fold :: PscBundle -> Array String
   fold (PscBundle a) = either pure id a.src <>
@@ -282,23 +265,28 @@ pscBundleOptions opts = fold <$> parsed
                        opt mainOpt a.main <>
                        opt namespaceOpt a.namespace
 
-pscDocsOptions :: Foreign -> Either ForeignError (Array String)
+pscDocsOptions :: Foreign -> F (Array String)
 pscDocsOptions opts = fold <$> parsed
   where
   parsed :: F PscDocs
-  parsed = read opts
+  parsed = readPscDocs opts
 
   fold :: PscDocs -> Array String
   fold (PscDocs a) = either pure id a.src <>
                      opt formatOpt a.format <>
                      opt docgenOpt a.docgen
 
-readEither :: forall left right. (IsForeign left, IsForeign right) => Foreign -> F (Either left right)
-readEither a = (Left <$> read a) <|> (Right <$> read a)
+readEither :: forall left right. (Foreign -> F left) -> (Foreign -> F right) -> Foreign -> F (Either left right)
+readEither readL readR a = (Left <$> readL a) <|> (Right <$> readR a)
 
-readEitherNU :: forall left right. (IsForeign left, IsForeign right) => NullOrUndefined Foreign -> F (NullOrUndefined (Either left right))
-readEitherNU a @ (NullOrUndefined Nothing) = pure (NullOrUndefined Nothing)
-readEitherNU (NullOrUndefined (Just a)) = (NullOrUndefined <<< Just) <$> readEither a
+readEitherNU :: forall left right. (Foreign -> F left) -> (Foreign -> F right) -> Foreign -> F (Maybe (Either left right))
+readEitherNU readL readR = traverse (readEither readL readR) <=< readNullOrUndefined
+
+readPropNU :: forall a. (Foreign -> F a) -> String -> Foreign -> F (Maybe a)
+readPropNU f k = traverse f <=< readNullOrUndefined <=< readProp k
+
+readSources :: Foreign -> F (Either String (Array String))
+readSources = readEither readString (traverse readString <=< readArray)
 
 foreign import expandGlob :: String -> (Array String)
 

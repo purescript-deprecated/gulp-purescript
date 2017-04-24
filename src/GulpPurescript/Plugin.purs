@@ -8,30 +8,31 @@ module GulpPurescript.Plugin
   , psci
   ) where
 
-import Prelude (Unit, ($), (<>), (<$>), (<*>), (<<<), (>>=), (+), bind, const, id, pure, show, unit)
+import Prelude
 
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Error.Class (catchError, throwError)
+import Control.Monad.Except (runExcept)
 
 import Data.Array as Array
+import Data.Bifunctor (lmap)
 import Data.Either (either)
-import Data.Foreign (Foreign)
-import Data.Foreign.Class (read)
+import Data.Foreign (F, Foreign, renderForeignError)
+import Data.List.NonEmpty as NEL
 import Data.Maybe (Maybe(Just))
 import Data.String (joinWith, null)
 import Data.Tuple (Tuple(..))
-import Data.Tuple.Nested (tuple2)
 
 import GulpPurescript.Buffer (mkBufferFromString)
 import GulpPurescript.ChildProcess (ChildProcess, spawn)
 import GulpPurescript.Glob (Glob, globAll)
 import GulpPurescript.GulpUtil (File, mkFile, mkPluginError)
 import GulpPurescript.Logalot (Logalot, info)
+import GulpPurescript.Options (Psci(..), pscOptions, pscBundleOptions, pscDocsOptions, readPsci)
 import GulpPurescript.OS (OS, Platform(Win32), platform)
-import GulpPurescript.Options (Psci(..), pscOptions, pscBundleOptions, pscDocsOptions)
 import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin, resolveBin)
 import GulpPurescript.Stream (Stream, ReadableStream, mkReadableStreamFromAff)
@@ -76,14 +77,17 @@ psciLoadModuleCommand = ":m"
 psciLoadForeignCommand :: String
 psciLoadForeignCommand = ":f"
 
-pscCommand :: String
-pscCommand = "psc"
+pursCommand :: String
+pursCommand = "purs"
 
-pscBundleCommand :: String
-pscBundleCommand = "psc-bundle"
+compileCommand :: String
+compileCommand = "compile"
 
-pscDocsCommand :: String
-pscDocsCommand = "psc-docs"
+bundleCommand :: String
+bundleCommand = "bundle"
+
+docsCommand :: String
+docsCommand = "docs"
 
 foreign import cwd :: String
 
@@ -98,46 +102,46 @@ resolve cmd args = catchError primary fallback
       bin <- resolveBin pursPackage { executable: cmd }
       os <- liftEff platform
       pure $ case os of
-                  Just Win32 -> tuple2 nodeCommand ([bin] <> args)
-                  _ -> tuple2 bin args
+                  Just Win32 -> Tuple nodeCommand ([bin] <> args)
+                  _ -> Tuple bin args
 
     fallback :: Error -> Aff (Effects eff) (Tuple String (Array String))
-    fallback _ = (const $ tuple2 cmd args) <$> catchError (which cmd) mapError
+    fallback _ = (const $ Tuple cmd args) <$> catchError (which cmd) mapError
 
     mapError :: Error -> Aff (Effects eff) String
     mapError _ = throwPluginError ("Failed to find " <> cmd <> ". " <> "Please ensure it is available on your system.")
 
 execute :: forall eff. String -> Array String -> Aff (Effects eff) String
 execute cmd args = do
-  Tuple cmd' args' <- resolve cmd args
+  Tuple cmd' args' <- resolve pursCommand ([cmd] <> args)
   result <- spawn cmd' args'
   pure result
 
 psc :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
 psc opts = mkReadableStreamFromAff $ do
-  output <- either (throwPluginError <<< show)
-                   (execute pscCommand <<< (_ <> rtsOpts))
+  output <- handleRead
+                   (execute compileCommand <<< (_ <> rtsOpts))
                    (pscOptions opts)
   if null output
      then pure unit
-     else liftEff $ info $ pscCommand <> "\n" <> output
+     else liftEff $ info $ compileCommand <> "\n" <> output
 
 pscBundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
-pscBundle opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscBundleOptions opts))
+pscBundle opts = mkReadableStreamFromAff (handleRead run (pscBundleOptions opts))
   where
     run :: Array String -> Aff (Effects eff) File
     run args = mkFile "." <$> mkBufferFromString
-                          <$> execute pscBundleCommand args
+                          <$> execute bundleCommand args
 
 pscDocs :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
-pscDocs opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (pscDocsOptions opts))
+pscDocs opts = mkReadableStreamFromAff (handleRead run (pscDocsOptions opts))
   where
     run :: Array String -> Aff (Effects eff) File
     run args = mkFile "." <$> mkBufferFromString
-                          <$> execute pscDocsCommand args
+                          <$> execute docsCommand args
 
 psci :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
-psci opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (read opts))
+psci opts = mkReadableStreamFromAff (handleRead run (readPsci opts))
   where
     run :: Psci -> Aff (Effects eff) File
     run (Psci a) = do
@@ -153,3 +157,6 @@ psci opts = mkReadableStreamFromAff (either (throwPluginError <<< show) run (rea
 
     loadForeign :: String -> String
     loadForeign a = psciLoadForeignCommand <> " " <> relative cwd a
+
+handleRead :: forall a b eff. (a -> Aff (Effects eff) b) -> F a -> Aff (Effects eff) b
+handleRead r = either (throwPluginError <<< renderForeignError) r <<< lmap NEL.head <<< runExcept

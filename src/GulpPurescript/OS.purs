@@ -4,34 +4,35 @@ module GulpPurescript.OS
   , platform
   ) where
 
-import Prelude (class Show, (<$>), (<>), const)
+import Prelude
 
-import Control.Monad.Eff (Eff)
+import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Exception.Unsafe (unsafeThrow)
+import Control.Monad.Except (runExcept)
 
 import Data.Either (either)
-import Data.Foreign (Foreign)
-import Data.Foreign.Class (class IsForeign, read)
+import Data.Foreign (F, Foreign, readString)
 import Data.Maybe (Maybe(..))
 
-foreign import data OS :: !
+foreign import data OS :: Effect
 
 data Platform = Darwin | Linux | Win32
 
 instance showPlatform :: Show Platform where
-  show a = case a of
-                Darwin -> "darwin"
-                Linux -> "linux"
-                Win32 -> "win32"
+  show = case _ of
+    Darwin -> "darwin"
+    Linux -> "linux"
+    Win32 -> "win32"
 
-instance isForeignPlatform :: IsForeign Platform where
-  read a = (\a -> case a of
-                       "darwin" -> Darwin
-                       "linux" -> Linux
-                       "win32" -> Win32
-                       _ -> unsafeThrow ("Unhandled platform: " <> a)) <$> read a
+readPlatform :: Foreign -> F Platform
+readPlatform =
+  readString >=> case _ of
+    "darwin" -> pure Darwin
+    "linux" -> pure Linux
+    "win32" -> pure Win32
+    a -> unsafeThrow ("Unhandled platform: " <> a)
 
 platform :: forall eff. Eff (os :: OS | eff) (Maybe Platform)
-platform = either (const Nothing) Just <$> read <$> platformFn
+platform = either (const Nothing) Just <$> runExcept <$> readPlatform <$> platformFn
 
 foreign import platformFn :: forall eff. Eff (os :: OS | eff) Foreign

@@ -7,12 +7,12 @@ module GulpPurescript.Glob
 import Prelude (Unit, ($))
 
 import Control.Monad.Aff (Aff, makeAff)
-import Control.Monad.Eff (Eff)
+import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Exception (Error)
 
 import Data.Function.Uncurried (Fn3, runFn3)
 
-foreign import data Glob :: !
+foreign import data Glob :: Effect
 
 glob :: forall eff. String -> Aff (glob :: Glob | eff) (Array String)
 glob pattern = makeAff $ runFn3 globFn pattern

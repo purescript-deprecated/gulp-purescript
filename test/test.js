@@ -45,8 +45,8 @@ test('psc - invalid option type', function(t){
     var stream = purescript.psc({src: 10});
 
     stream.on('error', function(e){
-      t.ok(/type mismatch/i.test(error.message), 'should have a failure message');
-      t.equal(error.name, 'Error');
+      t.ok(/type mismatch/i.test(e.message), 'should have a failure message');
+      t.equal(e.name, 'Error');
     });
   }
   catch (error) {
