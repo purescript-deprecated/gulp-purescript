@@ -12,12 +12,12 @@ var through2 = require('through2');
 
 var purescript = require('../');
 
-test('psc - basic', function(t){
+test('compile - basic', function(t){
   t.plan(1);
 
   var fixture = './test/Fixture1.purs';
 
-  var stream = purescript.psc({src: fixture});
+  var stream = purescript.compile({src: fixture});
 
   stream.pipe(through2.obj(function(chunk, encoding, callback){
     t.pass('should output a compiled result');
@@ -25,12 +25,12 @@ test('psc - basic', function(t){
   }));
 });
 
-test('psc - error', function(t){
+test('compile - error', function(t){
   t.plan(2);
 
   var fixture = './test/Fixture2.purs';
 
-  var stream = purescript.psc({src: fixture});
+  var stream = purescript.compile({src: fixture});
 
   stream.on('error', function(e){
     t.ok(/"where"/.test(e.message), 'should have a failure message');
@@ -38,11 +38,11 @@ test('psc - error', function(t){
   });
 });
 
-test('psc - invalid option type', function(t){
+test('compile - invalid option type', function(t){
   t.plan(2);
 
   try {
-    var stream = purescript.psc({src: 10});
+    var stream = purescript.compile({src: 10});
 
     stream.on('error', function(e){
       t.ok(/type mismatch/i.test(e.message), 'should have a failure message');
@@ -55,15 +55,15 @@ test('psc - invalid option type', function(t){
   }
 });
 
-test('psc-bundle - basic', function(t){
+test('bundle - basic', function(t){
   t.plan(1);
 
   var fixture = './test/foreign.js';
 
-  var stream = purescript.pscBundle({src: fixture});
+  var stream = purescript.bundle({src: fixture});
 
   stream.pipe(through2.obj(function(chunk, encoding, callback){
-    t.ok(/psc-bundle/.test(chunk.contents.toString()), 'should have a compiled result');
+    t.ok(/bundle/.test(chunk.contents.toString()), 'should have a compiled result');
     callback();
   }));
 });

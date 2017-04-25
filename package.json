@@ -17,9 +17,9 @@
     "output"
   ],
   "scripts": {
-    "psc": "purs compile 'src/**/*.purs' 'bower_components/purescript-*/src/**/*.purs'",
-    "test": "npm run psc && (node test/test.js | tap-spec)",
-    "prepublish": "rimraf output && npm run psc"
+    "build": "purs compile 'src/**/*.purs' 'bower_components/purescript-*/src/**/*.purs'",
+    "test": "npm run build && (node test/test.js | tap-spec)",
+    "prepublish": "rimraf output && npm run build"
   },
   "keywords": [
     "gulpplugin",

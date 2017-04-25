@@ -2,9 +2,9 @@ module GulpPurescript.Plugin
   ( Effects
   , Errorback
   , Callback
-  , psc
-  , pscBundle
-  , pscDocs
+  , compile
+  , bundle
+  , docs
   , psci
   ) where
 
@@ -31,7 +31,7 @@ import GulpPurescript.ChildProcess (ChildProcess, spawn)
 import GulpPurescript.Glob (Glob, globAll)
 import GulpPurescript.GulpUtil (File, mkFile, mkPluginError)
 import GulpPurescript.Logalot (Logalot, info)
-import GulpPurescript.Options (Psci(..), pscOptions, pscBundleOptions, pscDocsOptions, readPsci)
+import GulpPurescript.Options (Psci(..), compileOptions, bundleOptions, docsOptions, readPsci)
 import GulpPurescript.OS (OS, Platform(Win32), platform)
 import GulpPurescript.Path (relative)
 import GulpPurescript.ResolveBin (ResolveBin, resolveBin)
@@ -117,24 +117,24 @@ execute cmd args = do
   result <- spawn cmd' args'
   pure result
 
-psc :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
-psc opts = mkReadableStreamFromAff $ do
+compile :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
+compile opts = mkReadableStreamFromAff $ do
   output <- handleRead
                    (execute compileCommand <<< (_ <> rtsOpts))
-                   (pscOptions opts)
+                   (compileOptions opts)
   if null output
      then pure unit
      else liftEff $ info $ compileCommand <> "\n" <> output
 
-pscBundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
-pscBundle opts = mkReadableStreamFromAff (handleRead run (pscBundleOptions opts))
+bundle :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+bundle opts = mkReadableStreamFromAff (handleRead run (bundleOptions opts))
   where
     run :: Array String -> Aff (Effects eff) File
     run args = mkFile "." <$> mkBufferFromString
                           <$> execute bundleCommand args
 
-pscDocs :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
-pscDocs opts = mkReadableStreamFromAff (handleRead run (pscDocsOptions opts))
+docs :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream File)
+docs opts = mkReadableStreamFromAff (handleRead run (docsOptions opts))
   where
     run :: Array String -> Aff (Effects eff) File
     run args = mkFile "." <$> mkBufferFromString

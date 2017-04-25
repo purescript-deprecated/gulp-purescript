@@ -21,8 +21,8 @@ var gulp = require('gulp');
 
 var purescript = require('gulp-purescript');
 
-gulp.task('psc', function(){
-  return purescript.psc({
+gulp.task('make', function(){
+  return purescript.compile({
     src: 'src/*.purs'
   });
 });
@@ -36,9 +36,9 @@ Refer to the PureScript [compiler usage](https://github.com/purescript/purescrip
 
 Options can be passed to the Haskell runtime system for `purs` by passing a `--purs-rts-flags` argument to `gulp`. Any values that follow this flag will be passed through to the runtime. There is no need to include `+RTS`/`-RTS` options as these are inserted automatically. See [the GHC documentation](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime-control.html#rts-opts-cmdline) for information on the available RTS options.
 
-### `purescript.psc(options)`
+### `purescript.compile(options)`
 
-Invokes the `psc` command. The following options are supported.
+Invokes the `purs compile` command. The following options are supported.
 
 ###### `src` (String or String Array)
 
@@ -72,13 +72,13 @@ Toggles `--no-prefix` that does not include the comment header.
 
 Toggles `--json-errors` that prints errors to stderr as JSON.
 
-### `purescript.pscBundle(options)`
+### `purescript.bundle(options)`
 
-Invokes the `purs compile` command. The following options are supported.
+Invokes the `purs bundle` command. The following options are supported.
 
 ###### `src` (String or String Array)
 
-The `psc`-produced JavaScript source files to bundle. Glob syntax is supported.
+The `purs compile`-produced JavaScript source files to bundle. Glob syntax is supported.
 
 ###### `output` (String)
 
@@ -100,7 +100,7 @@ Sets `--namespace=<string>` that specifies the namespace that PureScript modules
 
 Toggles `--source-maps` that generates source maps.
 
-### `purescript.pscDocs(options)`
+### `purescript.docs(options)`
 
 Invokes the `purs docs` command. The following options are supported.
 
@@ -143,15 +143,15 @@ var sources = [
 ];
 
 gulp.task("make", function () {
-  return purescript.psc({ src: sources });
+  return purescript.compile({ src: sources });
 });
 
 gulp.task("bundle", ["make"], function () {
-  return purescript.pscBundle({ src: "output/**/*.js", output: "dist/bundle.js" });
+  return purescript.bundle({ src: "output/**/*.js", output: "dist/bundle.js" });
 });
 
 gulp.task("docs", function () {
-  return purescript.pscDocs({
+  return purescript.docs({
       src: sources,
       docgen: {
         "Name.Of.Module1": "docs/Name/Of/Module1.md",
@@ -166,7 +166,7 @@ gulp.task("dotpsci", function () {
 });
 
 gulp.task("test", ["make"], function() {
-  return purescript.pscBundle({ src: "output/**/*.js", main: "Test.Main" })
+  return purescript.bundle({ src: "output/**/*.js", main: "Test.Main" })
     .pipe(run("node"));
 });
 

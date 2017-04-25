@@ -1,8 +1,8 @@
 module GulpPurescript.Options
   ( Psci(..)
-  , pscOptions
-  , pscBundleOptions
-  , pscDocsOptions
+  , compileOptions
+  , bundleOptions
+  , docsOptions
   , readPsci
   ) where
 
@@ -106,8 +106,8 @@ docgenOpt = "docgen"
 docgenKey :: String
 docgenKey = docgenOpt
 
-newtype Psc
-  = Psc { src :: Either String (Array String)
+newtype Compile
+  = Compile { src :: Either String (Array String)
         , output :: Maybe String
         , verboseErrors :: Maybe Boolean
         , comments :: Maybe Boolean
@@ -117,8 +117,8 @@ newtype Psc
         , jsonErrors :: Maybe Boolean
         }
 
-newtype PscBundle
-  = PscBundle { src :: Either String (Array String)
+newtype Bundle
+  = Bundle { src :: Either String (Array String)
               , output :: Maybe String
               , "module" :: Maybe (Either String (Array String))
               , main :: Maybe (Either Boolean String)
@@ -126,8 +126,8 @@ newtype PscBundle
               , sourceMaps :: Maybe Boolean
               }
 
-newtype PscDocs
-  = PscDocs { src :: Either String (Array String)
+newtype Docs
+  = Docs { src :: Either String (Array String)
             , format :: Maybe Format
             , docgen :: Maybe Docgen
             }
@@ -141,8 +141,8 @@ newtype PathArray = PathArray (Array String)
 
 data Format = Markdown | ETags | CTags
 
-readPsc :: Foreign -> F Psc
-readPsc obj = do
+readCompile :: Foreign -> F Compile
+readCompile obj = do
   src <- readSources =<< readProp srcKey obj
   output <- readPropNU readString outputKey obj
   verboseErrors <- readPropNU readBoolean verboseErrorsKey obj
@@ -151,24 +151,24 @@ readPsc obj = do
   dumpCoreFn <- readPropNU readBoolean dumpCoreFnKey obj
   noPrefix <- readPropNU readBoolean noPrefixKey obj
   jsonErrors <- readPropNU readBoolean jsonErrorsKey obj
-  pure $ Psc { src, output, verboseErrors, comments, sourceMaps, dumpCoreFn, noPrefix, jsonErrors }
+  pure $ Compile { src, output, verboseErrors, comments, sourceMaps, dumpCoreFn, noPrefix, jsonErrors }
 
-readPscBundle :: Foreign -> F PscBundle
-readPscBundle obj = do
+readBundle :: Foreign -> F Bundle
+readBundle obj = do
   src <- readSources =<< readProp srcKey obj
   output <- readPropNU readString outputKey obj
   mod <- readPropNU readSources moduleKey obj
   main <- readPropNU (readEither readBoolean readString) mainKey obj
   namespace <- readPropNU readString namespaceKey obj
   sourceMaps <- readPropNU readBoolean sourceMapsKey obj
-  pure $ PscBundle { src, output, "module": mod, main, namespace, sourceMaps }
+  pure $ Bundle { src, output, "module": mod, main, namespace, sourceMaps }
 
-readPscDocs :: Foreign -> F PscDocs
-readPscDocs obj = do
+readDocs :: Foreign -> F Docs
+readDocs obj = do
   src <- readSources =<< readProp srcKey obj
   format <- readPropNU readFormat formatKey obj
   docgen <- readPropNU readDocgen docgenOpt obj
-  pure $ PscDocs { src, format, docgen }
+  pure $ Docs { src, format, docgen }
 
 readPsci :: Foreign -> F Psci
 readPsci obj = Psci <$> { src: _ } <$> (readSources =<< readProp srcKey obj)
@@ -232,14 +232,14 @@ parseDocgen (Docgen obj) =
     modules <- keys obj'
     for modules \m -> (\f -> m <> ":" <> f) <$> (readString =<< readProp m obj')
 
-pscOptions :: Foreign -> F (Array String)
-pscOptions opts = fold <$> parsed
+compileOptions :: Foreign -> F (Array String)
+compileOptions opts = fold <$> parsed
   where
-  parsed :: F Psc
-  parsed = readPsc opts
+  parsed :: F Compile
+  parsed = readCompile opts
 
-  fold :: Psc -> Array String
-  fold (Psc a) = either pure id a.src <>
+  fold :: Compile -> Array String
+  fold (Compile a) = either pure id a.src <>
                  opt outputOpt a.output <>
                  opt verboseErrorsOpt a.verboseErrors <>
                  opt commentsOpt a.comments <>
@@ -248,36 +248,33 @@ pscOptions opts = fold <$> parsed
                  opt noPrefixOpt a.noPrefix <>
                  opt jsonErrorsOpt a.jsonErrors
 
-pscBundleOptions :: Foreign -> F (Array String)
-pscBundleOptions opts = fold <$> parsed
+bundleOptions :: Foreign -> F (Array String)
+bundleOptions opts = fold <$> parsed
   where
-  parsed :: F PscBundle
-  parsed = readPscBundle opts
+  parsed :: F Bundle
+  parsed = readBundle opts
 
-  fold :: PscBundle -> Array String
-  fold (PscBundle a) = either pure id a.src <>
+  fold :: Bundle -> Array String
+  fold (Bundle a) = either pure id a.src <>
                        opt outputOpt a.output <>
                        opt moduleOpt a."module" <>
                        opt mainOpt a.main <>
                        opt namespaceOpt a.namespace <>
                        opt sourceMapsOpt a.sourceMaps
 
-pscDocsOptions :: Foreign -> F (Array String)
-pscDocsOptions opts = fold <$> parsed
+docsOptions :: Foreign -> F (Array String)
+docsOptions opts = fold <$> parsed
   where
-  parsed :: F PscDocs
-  parsed = readPscDocs opts
+  parsed :: F Docs
+  parsed = readDocs opts
 
-  fold :: PscDocs -> Array String
-  fold (PscDocs a) = either pure id a.src <>
+  fold :: Docs -> Array String
+  fold (Docs a) = either pure id a.src <>
                      opt formatOpt a.format <>
                      opt docgenOpt a.docgen
 
 readEither :: forall left right. (Foreign -> F left) -> (Foreign -> F right) -> Foreign -> F (Either left right)
 readEither readL readR a = (Left <$> readL a) <|> (Right <$> readR a)
-
-readEitherNU :: forall left right. (Foreign -> F left) -> (Foreign -> F right) -> Foreign -> F (Maybe (Either left right))
-readEitherNU readL readR = traverse (readEither readL readR) <=< readNullOrUndefined
 
 readPropNU :: forall a. (Foreign -> F a) -> String -> Foreign -> F (Maybe a)
 readPropNU f k = traverse f <=< readNullOrUndefined <=< readProp k
