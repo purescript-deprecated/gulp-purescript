@@ -5,8 +5,8 @@ module GulpPurescript.Logalot
 
 import Prelude (Unit)
 
-import Control.Monad.Eff (Eff)
+import Control.Monad.Eff (Eff, kind Effect)
 
-foreign import data Logalot :: !
+foreign import data Logalot :: Effect
 
 foreign import info :: forall eff. String -> Eff (logalot :: Logalot | eff) Unit

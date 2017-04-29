@@ -6,12 +6,12 @@ module GulpPurescript.Which
 import Prelude (Unit, ($))
 
 import Control.Monad.Aff (Aff, makeAff)
-import Control.Monad.Eff (Eff)
+import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.Eff.Exception (Error)
 
 import Data.Function.Uncurried (Fn3, runFn3)
 
-foreign import data Which :: !
+foreign import data Which :: Effect
 
 which :: forall eff. String -> Aff (which :: Which | eff) String
 which cmd = makeAff $ runFn3 whichFn cmd

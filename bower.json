@@ -2,7 +2,7 @@
   "name": "gulp-purescript",
   "private": true,
   "dependencies": {
-    "purescript-aff": "~0.17.0",
-    "purescript-foreign": "~1.0.0"
+    "purescript-aff": "~3.0.0",
+    "purescript-foreign": "~4.0.0"
   }
 }
