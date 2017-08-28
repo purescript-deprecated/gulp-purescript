@@ -34,7 +34,7 @@ There is also [a more complete example](#full-example) that makes use of all the
 
 Refer to the PureScript [compiler usage](https://github.com/purescript/purescript/wiki/Language-Guide:-Getting-Started#compiler-usage) section of the Github wiki for additional details on the behaviour of each option below.
 
-Options can be passed to the Haskell runtime system for `purs` by passing a `--purs-rts-flags` argument to `gulp`. Any values that follow this flag will be passed through to the runtime. There is no need to include `+RTS`/`-RTS` options as these are inserted automatically. See [the GHC documentation](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime-control.html#rts-opts-cmdline) for information on the available RTS options.
+Options can be passed to the Haskell runtime system for `purs` by passing a `--purs-rts-flags` argument to `gulp`. Any values that follow this flag will be passed through to the runtime. There is no need to include `+RTS`/`-RTS` options as these are inserted automatically. See [the GHC documentation](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime_control.html#setting-rts-options-on-the-command-line) for information on the available RTS options.
 
 ### `purescript.compile(options)`
 
