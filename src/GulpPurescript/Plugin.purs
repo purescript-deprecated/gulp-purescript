@@ -113,14 +113,14 @@ resolve cmd args = catchError primary fallback
 
 execute :: forall eff. String -> Array String -> Aff (Effects eff) String
 execute cmd args = do
-  Tuple cmd' args' <- resolve pursCommand ([cmd] <> args)
+  Tuple cmd' args' <- resolve pursCommand ([cmd] <> args <> rtsOpts)
   result <- spawn cmd' args'
   pure result
 
 compile :: forall eff. Foreign -> Eff (Effects eff) (ReadableStream Unit)
 compile opts = mkReadableStreamFromAff $ do
   output <- handleRead
-                   (execute compileCommand <<< (_ <> rtsOpts))
+                   (execute compileCommand)
                    (compileOptions opts)
   if null output
      then pure unit
