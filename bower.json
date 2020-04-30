@@ -1,8 +1,0 @@
-{
-  "name": "gulp-purescript",
-  "private": true,
-  "dependencies": {
-    "purescript-aff": "~3.0.0",
-    "purescript-foreign": "~4.0.0"
-  }
-}
